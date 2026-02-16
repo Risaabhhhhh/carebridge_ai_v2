@@ -1,0 +1,32 @@
+# Virtual Environments
+venv/
+venv311/
+.env
+.env.*
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Model / HuggingFace cache
+.cache/
+huggingface/
+models/
+
+# VSCode
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Jupyter
+.ipynb_checkpoints/
+
+# FAISS index (if generated locally)
+*.index
+*.faiss
