@@ -1,6 +1,10 @@
 import torch
 
+
 def generate(prompt: str, model, tokenizer, max_new_tokens: int = 300):
+    """
+    Generate a deterministic JSON response from the model.
+    """
 
     formatted_prompt = (
         "<bos><start_of_turn>user\n"
@@ -23,25 +27,26 @@ def generate(prompt: str, model, tokenizer, max_new_tokens: int = 300):
         outputs = model.generate(
             **inputs,
             max_new_tokens=max_new_tokens,
-            do_sample=False,  # deterministic
+            do_sample=False,       # deterministic output
             temperature=0.0,
             use_cache=True,
             eos_token_id=tokenizer.eos_token_id,
             pad_token_id=tokenizer.eos_token_id
         )
 
+    # Extract only generated tokens (exclude prompt)
     generated_tokens = outputs[0][input_len:]
 
-    output = tokenizer.decode(
+    decoded = tokenizer.decode(
         generated_tokens,
         skip_special_tokens=True
     ).strip()
 
-    # Hard JSON extraction safety
-    start = output.find("{")
-    end = output.rfind("}") + 1
+    # ✅ Hard JSON extraction safety
+    start = decoded.find("{")
+    end = decoded.rfind("}") + 1
 
     if start != -1 and end != -1:
-        output = output[start:end]
+        decoded = decoded[start:end]
 
-    return output
+    return decoded

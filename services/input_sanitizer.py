@@ -1,12 +1,15 @@
+# services/input_sanitizer.py
+
+
 def sanitize_audit_input(request):
     """
     Cleans and validates user input before passing to engine.
     """
 
-    policy_text = (request.policy_text or "").strip()
-    rejection_text = (request.rejection_text or "").strip()
-    medical_text = (request.medical_documents_text or "").strip()
-    user_explanation = (request.user_explanation or "").strip()
+    policy_text = (getattr(request, "policy_text", "") or "").strip()
+    rejection_text = (getattr(request, "rejection_text", "") or "").strip()
+    medical_text = (getattr(request, "medical_documents_text", "") or "").strip()
+    user_explanation = (getattr(request, "user_explanation", "") or "").strip()
 
     # Basic length normalization (prevent huge dumps)
     MAX_LEN = 8000
@@ -29,5 +32,5 @@ def sanitize_audit_input(request):
         "rejection_text": rejection_text,
         "medical_text": medical_text,
         "user_explanation": user_explanation,
-        "input_quality": input_quality
+        "input_quality": input_quality,
     }
