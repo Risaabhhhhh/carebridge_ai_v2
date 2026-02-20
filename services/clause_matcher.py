@@ -27,7 +27,14 @@ def run_clause_matcher(model, tokenizer, policy_text, rejection_text, user_conte
     # --------------------------------------------------
     prompt = clause_matching_prompt(policy_text, rejection_text, user_context)
 
-    raw_output = generate(prompt, model, tokenizer)
+    raw_output = generate(
+        prompt,
+        model,
+        tokenizer,
+        json_mode=True   # ✅ IMPORTANT
+    )
+
+    print("RAW CLAUSE OUTPUT:", raw_output)
 
     try:
         return ClauseMatchResult.model_validate_json(raw_output)

@@ -13,17 +13,16 @@ from schemas.policy_comparison import PolicyComparisonReport
 
 from services.report_chat_service import run_report_chat
 from services.chat_memory import create_session
-
+from fastapi.middleware.cors import CORSMiddleware
 
 # --------------------------------------
 # FastAPI App Init
 # --------------------------------------
 
 app = FastAPI(title="CareBridge AI – CareBridge Backend v2")
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -1,26 +1,51 @@
 @import "tailwindcss";
 
+/* === BRAND COLOR SYSTEM === */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --sage: #899481;
+  --stone: #CDBCAB;
+  --ivory: #EFE9E1;
+  --charcoal: #1F2933;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+/* === BASE STYLING === */
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--ivory);
+  color: var(--charcoal);
+  font-family: var(--font-sans);
+  letter-spacing: 0.01em;
+}
+
+/* Headings use serif for regal tone */
+h1, h2, h3, h4 {
+  font-family: var(--font-serif);
+  letter-spacing: 0.02em;
+}
+
+/* Subtle premium selection */
+::selection {
+  background-color: var(--sage);
+  color: white;
+}
+
+/* Minimal refined animation */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeUp {
+  animation: fadeUp 0.6s ease forwards;
 }

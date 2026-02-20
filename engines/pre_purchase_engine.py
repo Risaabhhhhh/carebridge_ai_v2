@@ -30,21 +30,31 @@ class PrePurchaseEngine:
         features = extract_structured_features(policy_text)
 
         # ----------------------------------
-        # 2️⃣ LLM Risk Classification
+        # 2️⃣ LLM Clause Risk Classification
         # ----------------------------------
         prompt = prepurchase_risk_prompt(policy_text)
-        raw_output = generate(prompt, self.model, self.tokenizer)
+
+        raw_output = generate(
+            prompt,
+            self.model,
+            self.tokenizer,
+            json_mode=True   # ✅ IMPORTANT FIX
+        )
+
         print("RAW PREPURCHASE LLM OUTPUT:", raw_output)
 
         try:
-            json_match = re.search(r"\{.*\}", raw_output, re.DOTALL)
+            json_match = re.search(r"\{[\s\S]*\}", raw_output)
+
             if not json_match:
                 raise ValueError("No JSON found")
 
-            risk_data = json.loads(json_match.group())
+            risk_data = json.loads(json_match.group(0))
             clause_risk = ClauseRiskAssessment(**risk_data)
 
-        except Exception:
+        except Exception as e:
+            print("⚠️ JSON PARSE FAILED:", e)
+
             clause_risk = ClauseRiskAssessment(
                 waiting_period="Not Found",
                 pre_existing_disease="Not Found",
@@ -88,18 +98,23 @@ class PrePurchaseEngine:
         # ----------------------------------
         compliance_data = evaluate_irdai_compliance(policy_text)
 
-        irdai_compliance = IRDAICompliance(
-            compliance_flags=compliance_data["flags"],
-            compliance_score=compliance_data["score"],
-            compliance_rating=compliance_data["rating"]
-        )
+        if isinstance(compliance_data, IRDAICompliance):
+            irdai_compliance = compliance_data
+            compliance_dict = compliance_data.model_dump()
+        else:
+            irdai_compliance = IRDAICompliance(
+                compliance_flags=compliance_data.get("flags", {}),
+                compliance_score=compliance_data.get("score", 0),
+                compliance_rating=compliance_data.get("rating", "Unknown")
+            )
+            compliance_dict = compliance_data
 
         # ----------------------------------
         # 6️⃣ Broker Structural Risk Analysis
         # ----------------------------------
         broker_risk_data = analyze_broker_risk(
             clause_risk=clause_risk,
-            compliance_data=compliance_data
+            compliance_data=compliance_dict
         )
 
         broker_risk_analysis = BrokerRiskAnalysis(**broker_risk_data)
@@ -109,8 +124,7 @@ class PrePurchaseEngine:
         # ----------------------------------
         score_data = compute_policy_score(
             clause_risk,
-            compliance_data,
-            broker_risk_data
+            compliance_dict
         )
 
         score = score_data["adjusted_score"]
@@ -126,11 +140,10 @@ class PrePurchaseEngine:
         if broker_risk_analysis.transparency_score >= 70:
             score += 5
 
-        # Clamp score
         score = max(0, min(score, 100))
 
         # ----------------------------------
-        # 9️⃣ Final Rating Calculation
+        # 9️⃣ Final Rating
         # ----------------------------------
         if score >= 80:
             rating = "Strong"
@@ -145,7 +158,8 @@ class PrePurchaseEngine:
         score_breakdown = PolicyScoreBreakdown(
             base_score=score_data["base_score"],
             adjusted_score=score,
-            rating=rating
+            rating=rating,
+            risk_index=score_data.get("risk_index", score)
         )
 
         # ----------------------------------

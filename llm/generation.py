@@ -1,15 +1,29 @@
 import torch
+import re
 
 
-def generate(prompt: str, model, tokenizer, max_new_tokens: int = 300):
-    """
-    Generate a deterministic JSON response from the model.
-    """
+def generate(
+    prompt: str,
+    model,
+    tokenizer,
+    max_new_tokens: int = 512,   # ↑ allow full JSON
+    json_mode: bool = False,
+):
+
+    if json_mode:
+        instruction = (
+    "Return ONLY valid JSON.\n"
+    "Do not include thoughts.\n"
+    "Do not include explanations.\n"
+    "Do not include markdown.\n"
+    "Start with { and end with }.\n"
+        )
+    else:
+        instruction = "Respond clearly and concisely."
 
     formatted_prompt = (
         "<bos><start_of_turn>user\n"
-        f"{prompt}\n"
-        "Respond ONLY in valid JSON. Do not explain. Do not add extra text."
+        f"{prompt}\n{instruction}"
         "<end_of_turn>\n"
         "<start_of_turn>model\n"
     )
@@ -27,14 +41,17 @@ def generate(prompt: str, model, tokenizer, max_new_tokens: int = 300):
         outputs = model.generate(
             **inputs,
             max_new_tokens=max_new_tokens,
-            do_sample=False,       # deterministic output
-            temperature=0.0,
-            use_cache=True,
+
+            do_sample=False if json_mode else True,
+
+            # 🔥 CRITICAL: stop reasoning
+            temperature=None if json_mode else 0.3,
+            top_p=1.0,
+
             eos_token_id=tokenizer.eos_token_id,
-            pad_token_id=tokenizer.eos_token_id
+            pad_token_id=tokenizer.eos_token_id,
         )
 
-    # Extract only generated tokens (exclude prompt)
     generated_tokens = outputs[0][input_len:]
 
     decoded = tokenizer.decode(
@@ -42,11 +59,17 @@ def generate(prompt: str, model, tokenizer, max_new_tokens: int = 300):
         skip_special_tokens=True
     ).strip()
 
-    # ✅ Hard JSON extraction safety
-    start = decoded.find("{")
-    end = decoded.rfind("}") + 1
+    # 🔥 REMOVE reasoning artifacts
+    decoded = decoded.replace("<unused94>", "")
+    decoded = decoded.replace("thought", "")
+    decoded = decoded.replace("analysis", "")
 
-    if start != -1 and end != -1:
-        decoded = decoded[start:end]
+    if json_mode:
+        match = re.search(r"\{[\s\S]*\}", decoded)
+        if match:
+            decoded = match.group(0)
+        else:
+            print("⚠️ JSON not found in model output")
+            print(decoded)
 
     return decoded

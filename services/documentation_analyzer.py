@@ -23,14 +23,20 @@ def run_documentation_analysis(
 
     for attempt in range(2):
 
-        raw_output = generate(prompt, model, tokenizer)
+        raw_output = generate(
+            prompt,
+            model,
+            tokenizer,
+            json_mode=True   # ✅ IMPORTANT
+        )
+
         print("RAW DOC OUTPUT:", raw_output)
 
         # -----------------------------------
         # 1️⃣ Empty Output Guard
         # -----------------------------------
         if not raw_output or not raw_output.strip():
-            continue  # retry once
+            continue
 
         # -----------------------------------
         # 2️⃣ Try Extracting JSON
@@ -49,10 +55,10 @@ def run_documentation_analysis(
             return DocumentationAnalysisResult(**result_dict)
 
         except (json.JSONDecodeError, ValidationError):
-            continue  # retry
+            continue
 
     # -----------------------------------
-    # 3️⃣ Safe Fallback (Never Crash)
+    # 3️⃣ Safe Fallback
     # -----------------------------------
     return DocumentationAnalysisResult(
         missing_documents=[],

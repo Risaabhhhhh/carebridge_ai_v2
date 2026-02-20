@@ -2,20 +2,20 @@ def clause_matching_prompt(policy_text: str, rejection_text: str, user_context: 
     return f"""
 You are a structured insurance claim audit AI.
 
-Your task:
+TASK:
 Identify which policy clause category is being applied in the rejection.
 
 STRICT RULES:
-1. Use ONLY the provided policy text.
-2. If the rejection references something not found in policy text, set:
-   clause_category = "Other / unclear"
-3. Quote the EXACT matching sentence from the policy text.
-4. If no exact sentence found, write:
-   "Not clearly found in provided policy text"
-5. Do NOT invent clauses.
-6. Be logically consistent between alignment and explanation.
+- Use ONLY the provided policy text.
+- Do NOT invent clauses.
+- Do NOT explain outside JSON.
+- Do NOT include reasoning or thoughts.
+- If no exact sentence is found, return:
+  "Not clearly found in provided policy text"
+- If rejection references something not in policy:
+  clause_category = "Other / unclear"
 
-Allowed clause categories:
+ALLOWED CLAUSE CATEGORIES:
 - Pre-existing disease
 - Waiting period
 - Policy exclusion
@@ -25,10 +25,10 @@ Allowed clause categories:
 - Authorization requirement
 - Other / unclear
 
-Interpretation Guide:
-- Strong → Rejection directly supported by explicit policy wording.
-- Partial → Policy loosely supports rejection but not exact match.
-- Weak → Rejection poorly supported or contradicted by policy.
+ALIGNMENT GUIDE:
+Strong = directly supported by policy wording  
+Partial = loosely supported  
+Weak = poorly supported or contradicted  
 
 POLICY TEXT:
 \"\"\"{policy_text}\"\"\"
@@ -39,14 +39,15 @@ REJECTION TEXT:
 USER CONTEXT:
 \"\"\"{user_context or "Not provided"}\"\"\"
 
-Return STRICT JSON ONLY:
+RETURN VALID JSON ONLY.
+START RESPONSE WITH {{ AND END WITH }}.
 
 {{
-  "clause_category": "...",
-  "clause_detected": "... exact quoted text ...",
+  "clause_category": "",
+  "clause_detected": "",
   "clause_clarity": "High | Medium | Low",
   "rejection_alignment": "Strong | Partial | Weak",
-  "explanation": "... short factual reasoning ...",
+  "explanation": "",
   "confidence": "High | Medium | Low"
 }}
 """
@@ -61,16 +62,19 @@ def documentation_analysis_prompt(
     return f"""
 You are a structured insurance documentation audit AI.
 
-Your task:
+TASK:
 Determine whether the rejection is procedural, substantive, or mixed.
 
 STRICT RULES:
-1. Use ONLY provided texts.
-2. Do NOT invent medical facts.
-3. If rejection cites missing paperwork → likely Procedural.
-4. If rejection cites policy exclusion → likely Substantive.
-5. If both policy and documentation involved → Mixed.
-6. If uncertain → confidence must be Low.
+- Use ONLY provided texts.
+- Do NOT invent medical facts.
+- Do NOT include thoughts or explanations outside JSON.
+- If unsure → confidence must be Low.
+
+GUIDE:
+Missing paperwork → Procedural  
+Policy exclusion → Substantive  
+Both involved → Mixed  
 
 POLICY TEXT:
 \"\"\"{policy_text}\"\"\"
@@ -84,28 +88,30 @@ MEDICAL DOCUMENTS:
 USER CONTEXT:
 \"\"\"{user_context or "Not provided"}\"\"\"
 
-Return STRICT JSON ONLY:
+RETURN VALID JSON ONLY.
+START RESPONSE WITH {{ AND END WITH }}.
 
 {{
-  "missing_documents": ["..."],
+  "missing_documents": [],
   "documentation_gap_severity": "High | Medium | Low",
   "rejection_nature": "Procedural | Substantive | Mixed",
-  "medical_ambiguity_detected": true,
-  "explanation": "... short reasoning ...",
+  "medical_ambiguity_detected": false,
+  "explanation": "",
   "confidence": "High | Medium | Low"
 }}
 """
 
+
 def report_chat_prompt(report_data: dict, history: list, user_question: str) -> str:
     return f"""
-You are an insurance claim explanation and drafting assistant.
+You are an insurance claim explanation assistant.
 
 STRICT RULES:
-- Use ONLY the provided report data.
+- Use ONLY the report data.
 - Do NOT invent clauses.
 - Do NOT predict outcomes.
 - Do NOT give legal advice.
-- Be neutral and cautious.
+- Do NOT include reasoning outside JSON.
 
 REPORT DATA:
 \"\"\"{report_data}\"\"\"
@@ -116,10 +122,11 @@ CONVERSATION HISTORY:
 USER QUESTION:
 \"\"\"{user_question}\"\"\"
 
-Return STRICT JSON:
+RETURN VALID JSON ONLY.
+START RESPONSE WITH {{ AND END WITH }}.
 
 {{
-  "explanation": "...",
-  "appeal_paragraph": "..." OR null
+  "explanation": "",
+  "appeal_paragraph": null
 }}
 """
