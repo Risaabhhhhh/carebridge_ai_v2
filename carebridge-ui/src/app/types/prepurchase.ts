@@ -5,7 +5,6 @@ export type RiskLevel =
   | "Not Found";
 
 export type PolicyRating = "Strong" | "Moderate" | "Weak";
-
 export type ConfidenceLevel = "High" | "Medium" | "Low";
 
 export interface ClauseRisk {
@@ -25,19 +24,11 @@ export interface ScoreBreakdown {
   base_score: number;
   adjusted_score: number;
   rating: PolicyRating;
-  risk_index: number; // 0–1
+  risk_index: number;
 }
 
 export interface IRDAICompliance {
-  compliance_flags: {
-    grievance_redressal_mentioned: boolean;
-    ombudsman_mentioned: boolean;
-    irdai_reference: boolean;
-    free_look_period: boolean;
-    portability_clause: boolean;
-    claim_settlement_timeline: boolean;
-    exclusion_transparency: boolean;
-  };
+  compliance_flags: Record<string, boolean | string[]>;
   compliance_score: number;
   compliance_rating:
     | "High Compliance"
@@ -46,10 +37,21 @@ export interface IRDAICompliance {
 }
 
 export interface BrokerRiskAnalysis {
-  risk_density_index: number; // 0–1
-  transparency_score: number; // 0–100
-  structural_risk_level: "Stable" | "Elevated" | "High";
+  risk_density_index: number;
+  transparency_score: number;
+
+  structural_risk_level:
+    | "High"
+    | "Elevated"
+    | "Moderate"
+    | "Balanced"
+    | "Insufficient Data";
+
   recommendation: string;
+
+  high_risk_count: number;
+  not_found_count: number;
+  data_sufficient: boolean;
 }
 
 export interface PrePurchaseReport {
@@ -57,9 +59,14 @@ export interface PrePurchaseReport {
   score_breakdown: ScoreBreakdown;
   overall_policy_rating: PolicyRating;
   summary: string;
+
+  // ✅ THIS FIXES YOUR ERROR
+  checklist_for_buyer: string[];
+
   confidence: ConfidenceLevel;
   irdai_compliance: IRDAICompliance;
   broker_risk_analysis: BrokerRiskAnalysis;
+
   red_flags: string[];
   positive_flags: string[];
 }

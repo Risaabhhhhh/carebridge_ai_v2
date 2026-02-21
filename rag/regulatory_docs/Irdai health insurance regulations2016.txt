@@ -1,0 +1,55 @@
+IRDAI Health Insurance Regulations 2016 and Amendments
+
+STANDARDISATION OF EXCLUSIONS
+
+IRDAI has standardised permanent exclusions across all health insurance policies. Insurers cannot exclude conditions beyond the standardised list without explicit IRDAI approval. Standardised permanent exclusions include:
+- Cosmetic or aesthetic treatments unless necessitated by an accident or illness
+- Experimental treatments not approved by medical authorities
+- Intentional self-injury
+- Treatment received outside India unless specifically covered
+
+RESTORATION BENEFIT
+
+Policies offering restoration benefit must clearly specify whether restoration applies to the same illness, different illness, or both. Partial restoration (restoring only a portion of the sum insured) must be disclosed clearly. If restoration benefit is promised in the policy and not applied when eligible, the policyholder may file a grievance.
+
+SUBLIMITS AND CAPS
+
+Disease-specific sublimits must be clearly disclosed in the policy schedule and Key Features Document. A sublimit that is not disclosed in the Key Features Document provided at time of sale cannot be enforced by the insurer.
+
+CLAIM SETTLEMENT RATIO DISCLOSURE
+
+Insurers must disclose their claim settlement ratio publicly on their website and in annual reports. This ratio must reflect individual health policies separately from group policies.
+
+THIRD PARTY ADMINISTRATORS (TPA)
+
+Insurers using TPAs for claim processing remain responsible for the TPA's actions. Delays or improper rejections by the TPA are the insurer's responsibility. A policyholder can escalate TPA-related issues directly to the insurer's grievance officer.
+
+NETWORK HOSPITALS
+
+Insurers must maintain an updated list of network hospitals on their website. If a policyholder is treated at a network hospital and cashless is denied without valid reason, the insurer may be liable for the inconvenience caused.
+
+RENEWABILITY
+
+Health insurance policies must be renewable for lifetime unless the policy specifically restricts renewability and this restriction was disclosed at time of sale. Insurers cannot refuse renewal except on grounds of fraud, moral hazard, or misrepresentation.
+
+Loading (increase in premium) on renewal must be justified and disclosed. Arbitrary loading is grounds for grievance.
+
+POLICY LAPSE AND GRACE PERIOD
+
+A grace period of 30 days must be provided for annual premium payment. During the grace period, the policy remains in force and claims are admissible. If a claim arises during the grace period and the premium is subsequently paid, the claim cannot be rejected solely on grounds of delayed payment.
+
+KEY FEATURES DOCUMENT
+
+Insurers must provide a Key Features Document (KFD) at point of sale summarising all major exclusions, waiting periods, sublimits, and co-payment clauses. If a restriction was not disclosed in the KFD provided to the policyholder, the insurer's ability to enforce that restriction may be challenged.
+
+MENTAL HEALTH COVERAGE
+
+As per the Mental Healthcare Act 2017, insurers must provide coverage for mental illness on the same basis as physical illness. Rejection of claims for mental health treatment on grounds that mental illness is excluded is not compliant with current law.
+
+AYUSH COVERAGE
+
+IRDAI has mandated that health insurance policies cover treatments under Ayurveda, Yoga, Unani, Siddha, and Homeopathy (AYUSH) systems in AYUSH hospitals. Rejection of AYUSH treatment claims in recognised hospitals may be challenged.
+
+MORATORIUM PERIOD
+
+After 8 continuous years of policy coverage without a break, the insurer cannot repudiate a claim on grounds of non-disclosure or misrepresentation, except in cases of proven fraud. This is the moratorium period under IRDAI regulations.

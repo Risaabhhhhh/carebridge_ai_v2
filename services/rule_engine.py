@@ -1,83 +1,168 @@
 # services/rule_engine.py
 
+import re
 from schemas.intermediate import ClauseMatchResult
 
 
 # --------------------------------------------------
-# 1️⃣ Clause Category Rule Detection
+# Phrase-level patterns per rejection category
+# More specific = fewer false positives
 # --------------------------------------------------
-def classify_rejection_rule_based(rejection_text: str | None):
+_REJECTION_PATTERNS = [
+    ("Pre-existing disease", [
+        r"pre.?existing",
+        r"prior condition",
+        r"pre.?existing disease",
+        r"known condition",
+        r"declared condition",
+        r"history of",
+    ]),
+    ("Waiting period", [
+        r"waiting period",
+        r"waiting period not completed",
+        r"initial waiting",
+        r"waiting period.*not.*elapsed",
+        r"policy.*not.*active.*sufficient",
+    ]),
+    ("Room rent limit", [
+        r"room rent",
+        r"room limit",
+        r"room rent.*exceed",
+        r"accommodation.*limit",
+        r"bed charge.*limit",
+    ]),
+    ("Co-payment", [
+        r"co.?pay",
+        r"co.?payment",
+        r"patient.*share",
+        r"your.*contribution",
+    ]),
+    ("Authorization requirement", [
+        r"pre.?authoriz",
+        r"prior authoriz",
+        r"cashless.*not.*approved",
+        r"authoriz.*not.*obtained",
+        r"approval.*not.*taken",
+    ]),
+    ("Insufficient documentation", [
+        r"insufficient.*document",
+        r"document.*not.*submitted",
+        r"missing.*document",
+        r"incomplete.*record",
+        r"document.*required",
+        r"medical.*record.*not.*provid",
+    ]),
+    ("Policy exclusion", [
+        r"cosmetic",
+        r"excluded.*procedure",
+        r"not covered.*policy",
+        r"excluded.*condition",
+        r"permanent exclusion",
+        r"listed.*exclusion",
+    ]),
+]
 
+
+def classify_rejection_rule_based(rejection_text: str | None) -> str | None:
+    """
+    Returns the best-matching clause category using phrase-level regex,
+    or None if no confident match found.
+    """
     if not rejection_text:
         return None
 
     text = rejection_text.lower()
 
-    if "pre-existing" in text or "pre existing" in text:
-        return "Pre-existing disease"
-
-    if "waiting period" in text:
-        return "Waiting period"
-
-    if "room rent" in text or "room limit" in text:
-        return "Room rent limit"
-
-    if "co-pay" in text or "copay" in text:
-        return "Co-payment"
-
-    if "authorization" in text or "pre-authorization" in text:
-        return "Authorization requirement"
-
-    if "document" in text or "insufficient" in text:
-        return "Insufficient documentation"
-
-    if "cosmetic" in text:
-        return "Policy exclusion"
+    for category, patterns in _REJECTION_PATTERNS:
+        if any(re.search(p, text) for p in patterns):
+            return category
 
     return None
 
 
 # --------------------------------------------------
-# 2️⃣ Override Layer (Hybrid Enforcement)
+# Override Layer — only overrides weak LLM outputs
 # --------------------------------------------------
-def apply_rule_overrides(clause_result, rejection_text):
-
+def apply_rule_overrides(clause_result: ClauseMatchResult, rejection_text: str) -> ClauseMatchResult:
+    """
+    Overrides LLM clause result only when:
+    - LLM returned low confidence AND unclear category
+    Rule-based match alone is not enough to override a Medium/High LLM result.
+    """
     category = classify_rejection_rule_based(rejection_text)
 
     if not category:
-        return clause_result  # No override
+        return clause_result
 
-    # If rule detected something strong, override weak LLM outputs
-    if clause_result.clause_category == "Other / unclear" or clause_result.confidence == "Low":
-
-        return ClauseMatchResult(
-            clause_category=category,
-            clause_detected="Detected via rule-based keyword match",
-            clause_clarity="High",
-            rejection_alignment="Strong",
-            explanation="Rejection reason directly matches standard policy category.",
-            confidence="High"
-        )
+    # ✅ Only override if BOTH conditions met — don't override good LLM output
+    if (
+        clause_result.clause_category == "Other / unclear"
+        and clause_result.confidence == "Low"
+    ):
+        return clause_result.model_copy(update={
+            "clause_category":    category,
+            "clause_detected":    f"Rejection matches '{category}' clause pattern.",
+            "clause_clarity":     "Medium",       # rule-based = medium clarity, not High
+            "rejection_alignment": "Partial",     # conservative — not forcing "Strong"
+            "explanation": (
+                f"Rejection reason pattern matches '{category}' category. "
+                "Detected via rule-based analysis — manual verification recommended."
+            ),
+            "confidence": "Medium",              # rule match → Medium, not High
+        })
 
     return clause_result
 
-def apply_waiting_period_override(clause_result, policy_text, medical_text):
 
+# --------------------------------------------------
+# Waiting Period Override
+# --------------------------------------------------
+
+# Patterns suggesting treatment occurred after waiting period completed
+_POST_WAITING_PATTERNS = [
+    r"after\s+\d+\s+year",           # "after 2 years", "after 3 years"
+    r"policy.*complet",               # "policy completion", "policy completed"
+    r"waiting.*complet",              # "waiting period completed"
+    r"elapse[d]?",                    # "waiting period elapsed"
+    r"beyond.*waiting",               # "beyond waiting period"
+    r"\d+\s+year[s]?.*policy",        # "3 years of policy"
+    r"continuous.*cover",             # "continuous coverage for X years"
+    r"inception.*\d+\s+year",         # "from inception, 2 years"
+]
+
+
+def apply_waiting_period_override(
+    clause_result: ClauseMatchResult,
+    policy_text: str,
+    medical_text: str,
+) -> ClauseMatchResult:
+    """
+    If rejection is 'Waiting period' but medical/policy text suggests
+    the waiting period was already completed, weaken the alignment.
+    """
     if clause_result.clause_category != "Waiting period":
         return clause_result
 
-    policy_text = (policy_text or "").lower()
-    medical_text = (medical_text or "").lower()
+    policy_lower  = (policy_text  or "").lower()
+    medical_lower = (medical_text or "").lower()
 
-    # Check if policy mentions waiting period duration
-    if "waiting period" in policy_text:
+    policy_mentions_waiting = "waiting period" in policy_lower
 
-        # If medical text suggests treatment occurred AFTER waiting period
-        if "after 2 years" in medical_text or "after policy completion" in medical_text:
-            clause_result.rejection_alignment = "Weak"
-            clause_result.explanation = (
-                "Medical documentation suggests waiting period may have been completed."
-            )
-            clause_result.confidence = "Medium"
+    # Check medical or policy text for evidence waiting period was served
+    combined = medical_lower + " " + policy_lower
+    post_waiting_evidence = any(
+        re.search(p, combined) for p in _POST_WAITING_PATTERNS
+    )
+
+    if policy_mentions_waiting and post_waiting_evidence:
+        return clause_result.model_copy(update={
+            "rejection_alignment": "Weak",
+            "explanation": (
+                "Medical or policy documentation suggests the waiting period "
+                "may have already been completed at time of claim. "
+                "Original explanation: " + clause_result.explanation
+            ),
+            "confidence": "Medium",
+        })
 
     return clause_result

@@ -1,11 +1,26 @@
-from pydantic import BaseModel
+# schemas/intermediate.py
+
+from pydantic import BaseModel, Field
 from typing import List, Literal
 
 
-Confidence = Literal["High", "Medium", "Low"]
+# --------------------------------------------------
+# Shared type aliases — import these across all schemas
+# instead of redefining Literal["High","Medium","Low"] everywhere
+# --------------------------------------------------
+ConfidenceLevel  = Literal["High", "Medium", "Low"]
+SeverityLevel    = Literal["High", "Medium", "Low"]
+AlignmentLevel   = Literal["Strong", "Partial", "Weak", "Not Detected"]
+ClarityLevel     = Literal["High", "Medium", "Low"]
 
+
+# --------------------------------------------------
+# Clause Match Result
+# --------------------------------------------------
 
 class ClauseMatchResult(BaseModel):
+    """Output of clause matching step — LLM + rule-based."""
+
     clause_category: Literal[
         "Pre-existing disease",
         "Waiting period",
@@ -14,31 +29,37 @@ class ClauseMatchResult(BaseModel):
         "Co-payment",
         "Insufficient documentation",
         "Authorization requirement",
-        "Other / unclear"
-    ]
+        "Not Detected",        # ✅ explicit — no clause could be identified
+        "Other / unclear",
+    ] = "Other / unclear"
 
-    clause_detected: str  # exact quoted text from policy
-    clause_clarity: Literal["High", "Medium", "Low"]
-    rejection_alignment: Literal["Strong", "Partial", "Weak"]
+    clause_detected:     str           = "Unclear"
+    clause_clarity:      ClarityLevel  = "Low"
+    rejection_alignment: AlignmentLevel = "Partial"   # ✅ includes "Not Detected"
+    explanation:         str           = "No explanation available."
+    confidence:          ConfidenceLevel = "Low"
 
-    explanation: str
-    confidence: Confidence
 
-
+# --------------------------------------------------
+# Documentation Analysis Result
+# --------------------------------------------------
 
 class DocumentationAnalysisResult(BaseModel):
-    missing_documents: List[str]
+    """Output of documentation analysis step — LLM + rule overrides."""
 
-    documentation_gap_severity: Literal["High", "Medium", "Low"]
+    missing_documents: List[str] = Field(default_factory=list)   # ✅ defaults to []
+
+    documentation_gap_severity: SeverityLevel = "Low"
 
     rejection_nature: Literal[
         "Procedural",
         "Substantive",
-        "Mixed"
-    ]
+        "Mixed",
+        "Not Detected",    # ✅ when nature cannot be determined
+    ] = "Not Detected"
 
-    medical_ambiguity_detected: bool
+    medical_ambiguity_detected: bool = False
 
-    explanation: str
+    explanation: str = "No explanation available."
 
-    confidence: Confidence
+    confidence: ConfidenceLevel = "Low"

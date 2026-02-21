@@ -3,61 +3,145 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+const NAV_ITEMS = [
+  { name: "Analyze Policy",    href: "/prepurchase" },
+  { name: "Audit Rejection",   href: "/audit" },
+  { name: "Compare Policies",  href: "/compare" },
+  { name: "Learn", href: "/learn" },
+];
+
 export default function Navbar() {
   const pathname = usePathname();
 
-  const navItems = [
-    { name: "PrePurchase", href: "/prepurchase" },
-    { name: "Compare", href: "/compare" },
-    { name: "Post-Rejection", href: "/audit" },
-  ];
-
   return (
-    <header className="w-full fixed top-0 z-50 bg-ivory/90 backdrop-blur-sm border-b border-stone/40">
-      <nav className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=DM+Mono:wght@300;400&display=swap');
 
-        {/* Brand */}
-        <Link href="/" className="font-serif text-xl tracking-wide">
-          CareBridge AI
+        .navbar {
+          position: fixed;
+          top: 0; left: 0; right: 0;
+          z-index: 100;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 0 48px;
+          height: 68px;
+          backdrop-filter: blur(12px);
+          background: rgba(250, 248, 243, 0.92);
+          border-bottom: 1px solid rgba(221, 216, 206, 0.8);
+        }
+
+        .nav-logo {
+          font-family: 'Cormorant Garamond', serif;
+          font-size: 20px;
+          font-weight: 500;
+          letter-spacing: 0.02em;
+          color: #2d5a3d;
+          text-decoration: none;
+        }
+
+        .nav-links {
+          display: flex;
+          align-items: center;
+          gap: 40px;
+          list-style: none;
+          margin: 0; padding: 0;
+        }
+
+        .nav-link {
+          position: relative;
+          font-family: 'DM Mono', monospace;
+          font-size: 10px;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+          text-decoration: none;
+          color: #8fa896;
+          transition: color 0.2s;
+          padding-bottom: 2px;
+        }
+
+        .nav-link::after {
+          content: '';
+          position: absolute;
+          bottom: -2px; left: 0;
+          height: 1px;
+          background: #2d5a3d;
+          width: 0;
+          transition: width 0.25s ease;
+        }
+
+        .nav-link:hover        { color: #2d5a3d; }
+        .nav-link:hover::after { width: 100%; }
+
+        .nav-link.active        { color: #2d5a3d; }
+        .nav-link.active::after { width: 100%; }
+
+        .nav-cta {
+          font-family: 'DM Mono', monospace;
+          font-size: 10px;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+          text-decoration: none;
+          background: #2d5a3d;
+          color: white;
+          padding: 10px 22px;
+          border-radius: 2px;
+          transition: background 0.2s;
+        }
+        .nav-cta:hover { background: #4a7c5f; }
+
+        /* Mobile */
+        .nav-mobile-toggle {
+          display: none;
+          flex-direction: column;
+          gap: 5px;
+          cursor: pointer;
+          background: none;
+          border: none;
+          padding: 4px;
+        }
+        .nav-mobile-toggle span {
+          display: block;
+          width: 22px; height: 1px;
+          background: #2d5a3d;
+          transition: all 0.2s;
+        }
+
+        @media (max-width: 768px) {
+          .navbar { padding: 0 24px; }
+          .nav-links, .nav-cta { display: none; }
+          .nav-mobile-toggle { display: flex; }
+        }
+      `}</style>
+
+      <header className="navbar">
+        <Link href="/" className="nav-logo">CareBridge</Link>
+
+        <nav>
+          <ul className="nav-links">
+            {NAV_ITEMS.map((item) => (
+              <li key={item.href}>
+                <Link
+                  href={item.href}
+                  className={`nav-link ${pathname === item.href ? "active" : ""}`}
+                >
+                  {item.name}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
+        <Link href="/prepurchase" className="nav-cta">
+          Get Started
         </Link>
 
-        {/* Navigation Links */}
-        <div className="hidden md:flex items-center gap-10">
-          {navItems.map((item) => {
-            const isActive = pathname === item.href;
-
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={`relative text-sm tracking-wide transition ${
-                  isActive
-                    ? "text-sage"
-                    : "text-charcoal/80 hover:text-sage"
-                }`}
-              >
-                {item.name}
-
-                {/* Underline Animation */}
-                <span
-                  className={`absolute left-0 -bottom-1 h-px bg-sage transition-all duration-300 ${
-                    isActive ? "w-full" : "w-0 group-hover:w-full"
-                  }`}
-                />
-              </Link>
-            );
-          })}
-        </div>
-
-        {/* CTA */}
-        <Link
-          href="/prepurchase"
-          className="hidden md:inline-block px-5 py-2 border border-sage text-sage text-sm rounded-md hover:bg-sage hover:text-white transition"
-        >
-          Analyze
-        </Link>
-
-      </nav>
-    </header>
+        {/* Mobile toggle — wire up state if needed */}
+        <button className="nav-mobile-toggle" aria-label="Menu">
+          <span /><span /><span />
+        </button>
+      </header>
+    </>
   );
 }

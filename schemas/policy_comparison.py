@@ -1,25 +1,22 @@
-from pydantic import BaseModel
+# schemas/policy_comparison.py
 
-
-class SinglePolicySummary(BaseModel):
-    overall_rating: str
-    adjusted_score: int
-
-    compliance_rating: str
-    compliance_score: int
-
-    structural_risk_level: str
-    transparency_score: int
+from pydantic import BaseModel, Field
+from typing import Literal
 
 
 class PolicyComparisonReport(BaseModel):
-    policy_a: SinglePolicySummary
-    policy_b: SinglePolicySummary
-
-    better_policy: str
-    score_difference: int
-    compliance_difference: int
-    transparency_difference: int
-
-    comparison_summary: str
-    recommendation: str
+    """
+    Flat schema matching the frontend ComparisonReport interface exactly.
+    """
+    policy_a_rating:    str
+    policy_b_rating:    str
+    policy_a_score:     float
+    policy_b_score:     float
+    recommended_policy: Literal["A", "B", "Neither"]
+    recommendation:     str
+    summary:            str
+    key_differences:    list[str] = Field(default_factory=list)
+    a_advantages:       list[str] = Field(default_factory=list)
+    b_advantages:       list[str] = Field(default_factory=list)
+    a_risks:            list[str] = Field(default_factory=list)
+    b_risks:            list[str] = Field(default_factory=list)

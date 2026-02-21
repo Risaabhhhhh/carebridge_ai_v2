@@ -1,6 +1,72 @@
-Insurance Grievance Redressal Process:
+IRDAI Grievance Redressal Framework for Health Insurance Policyholders
 
-1. Policyholder may file complaint with insurer grievance officer.
-2. If unsatisfied within 30 days, escalate to IRDAI.
-3. Insurance Ombudsman can review claim disputes.
-4. All communication must be written and documented.
+STEP 1 — INSURER GRIEVANCE OFFICER
+
+Every insurance company is required by IRDAI to designate a Grievance Redressal Officer (GRO). The contact details of the GRO must be printed in the policy document, displayed on the insurer's website, and communicated to the policyholder at the time of policy issuance.
+
+A policyholder may file a written complaint with the insurer's GRO regarding claim rejection, partial settlement, delay in settlement, or any other grievance related to the policy. The complaint must include the policy number, claim reference number, nature of grievance, and supporting documents.
+
+The insurer must acknowledge the complaint within 3 working days of receipt. The insurer must resolve the grievance and communicate the resolution within 15 days of receiving the complaint. If resolution requires additional time, the insurer must inform the policyholder of the reason for delay and the expected resolution date.
+
+All grievance communications must be in writing and properly documented. Verbal assurances from insurer representatives do not constitute a formal resolution.
+
+STEP 2 — IRDAI INTEGRATED GRIEVANCE MANAGEMENT SYSTEM (IGMS)
+
+If the policyholder is not satisfied with the insurer's resolution, or if the insurer does not respond within 15 days, the policyholder may escalate the complaint to IRDAI through the Integrated Grievance Management System (IGMS) at igms.irda.gov.in.
+
+IRDAI does not directly resolve individual disputes but monitors insurer grievance handling. Filing with IGMS creates an official record and compels the insurer to respond through the regulated channel. IRDAI may direct the insurer to reconsider the complaint.
+
+Policyholders may also contact IRDAI's consumer helpline at 155255 or 1800 4254 732 (toll-free) for guidance on grievance filing.
+
+STEP 3 — INSURANCE OMBUDSMAN
+
+The Insurance Ombudsman is an independent quasi-judicial authority established under the Redressal of Public Grievances Rules 1998 and updated under the Insurance Ombudsman Rules 2017. The Ombudsman resolves disputes between policyholders and insurers without court proceedings.
+
+ELIGIBILITY TO FILE BEFORE OMBUDSMAN:
+- The policyholder must have first filed a complaint with the insurer and either received an unsatisfactory response or received no response within 30 days.
+- The complaint must be filed within one year of the insurer's final rejection or last communication.
+- The claim amount in dispute must not exceed Rs 50 lakhs (revised from Rs 30 lakhs as per 2021 amendment).
+- The complaint must relate to a personal lines policy (individual or family health insurance).
+
+WHAT THE OMBUDSMAN CAN ADDRESS:
+- Rejection of claim or part thereof
+- Dispute regarding premium paid or payable
+- Dispute on legal construction of policy wordings
+- Delay in settlement of claim
+- Non-issuance of insurance document after receipt of premium
+
+OMBUDSMAN PROCESS:
+The Ombudsman will first attempt mediation between the policyholder and insurer. If mediation fails, the Ombudsman may pass a formal award. The award is binding on the insurer if accepted by the policyholder. The insurer must comply with the award within 30 days.
+
+There are 17 Ombudsman offices across India covering different jurisdictions based on the policyholder's residential address or the insurer's registered office location.
+
+STEP 4 — CONSUMER FORUM AND COURTS
+
+If the Ombudsman route is not available or the award is unsatisfactory, the policyholder may approach the District Consumer Disputes Redressal Commission, State Commission, or National Commission under the Consumer Protection Act 2019.
+
+Insurance claim rejection is considered a deficiency of service under the Consumer Protection Act. Consumer forums can award compensation for mental agony and litigation costs in addition to the claim amount.
+
+For disputes involving complex legal questions of policy interpretation, civil courts have jurisdiction. However, consumer forums are generally faster and do not require legal representation.
+
+DOCUMENTATION REQUIRED FOR GRIEVANCE FILING
+
+When filing a grievance at any level, the policyholder should maintain and submit:
+- Copy of the insurance policy document with schedule
+- Original claim rejection letter from the insurer
+- All medical records submitted with the original claim
+- Correspondence with the insurer regarding the claim
+- Hospital bills, discharge summary, and prescription records
+- Any written communication from TPA or insurer representatives
+- Copy of claim form submitted to insurer
+
+IMPORTANT TIMELINES SUMMARY
+
+- Insurer must acknowledge grievance: within 3 working days
+- Insurer must resolve grievance: within 15 days
+- Escalation to IGMS if unresolved: after 15 days from complaint filing
+- Filing before Ombudsman: within 1 year of insurer's final reply
+- Insurer must comply with Ombudsman award: within 30 days of award
+
+WRITTEN COMMUNICATION REQUIREMENT
+
+All communications in the grievance process must be in writing. Email communication is accepted. Policyholders should retain copies of all correspondence including emails, letters, and acknowledgement receipts. If approaching the Ombudsman, a complete written record of all prior communication with the insurer strengthens the case.

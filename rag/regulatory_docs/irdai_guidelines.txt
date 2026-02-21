@@ -1,7 +1,82 @@
-IRDAI Protection of Policyholders' Interests Regulations 2017:
+IRDAI Protection of Policyholders' Interests Regulations 2017
 
-- Insurers must communicate claim decisions within 30 days.
-- Rejection must clearly specify policy clause.
-- Policyholders have right to grievance redressal.
-- If dissatisfied, complaint can be filed before Insurance Ombudsman.
-- Insurers must not deny claim without documented clause basis.
+CLAIM DECISIONS AND TIMELINES
+
+Insurers must communicate claim decisions within 30 days of receiving the last necessary document. Failure to communicate within this period entitles the policyholder to interest on the claim amount at the prevailing bank rate plus 2 percent per annum.
+
+Where additional information is required, the insurer must request it within 15 days of receiving the claim. The 30-day clock restarts from the date the last document is received.
+
+REJECTION REQUIREMENTS
+
+A claim rejection must clearly specify the exact policy clause, condition, or exclusion being applied. Vague or general rejection reasons such as "not covered" without citing the specific policy clause are not compliant with IRDAI regulations.
+
+Insurers must not deny a claim without a documented clause basis. Every rejection letter must include the relevant policy section number, the exact wording of the clause applied, and an explanation of how the clause applies to the specific claim being rejected.
+
+Where a claim is partially settled, the insurer must explain in writing which portions are being settled, which are being rejected, and under which specific clauses.
+
+PRE-EXISTING DISEASE
+
+A pre-existing disease is defined as any condition, ailment, injury or disease that was diagnosed by a physician or for which medical advice or treatment was recommended by or received from a physician within 48 months prior to the first policy inception date.
+
+Insurers may exclude pre-existing diseases during the waiting period specified in the policy. However, after the waiting period has elapsed, pre-existing conditions must be covered as per the policy terms.
+
+If a policyholder can demonstrate through medical records that a condition was not diagnosed, treated, or symptomatic before policy inception, the insurer cannot apply the pre-existing disease exclusion.
+
+WAITING PERIOD
+
+Initial waiting period: Most health insurance policies have an initial waiting period of 30 days from inception, during which no claims except accidental injuries are admissible.
+
+Disease-specific waiting periods: Certain conditions such as hernia, cataract, joint replacement, and sinusitis may have specific waiting periods of 1 to 2 years as specified in the policy schedule.
+
+Pre-existing disease waiting period: IRDAI regulations permit insurers to apply a waiting period of up to 48 months for pre-existing diseases. After this period, the conditions must be covered.
+
+A policyholder who has completed the waiting period has a right to claim. Rejection citing waiting period after its expiry is not compliant with IRDAI regulations and is grounds for appeal.
+
+PORTABILITY
+
+Under IRDAI portability regulations, a policyholder switching from one insurer to another is entitled to credit for the waiting period already served with the previous insurer. The new insurer cannot apply the full waiting period if the policyholder has served equivalent years with another insurer.
+
+ROOM RENT SUBLIMITS
+
+Insurers may apply room rent sublimits as a percentage of the sum insured. When a policyholder occupies a room above the sublimit, proportionate deduction may be applied to associated expenses. However, the basis of proportionate deduction must be clearly specified in the policy document.
+
+If the room rent sublimit is not clearly disclosed in the policy schedule, the insurer cannot enforce proportionate deductions.
+
+CO-PAYMENT
+
+Co-payment clauses require the policyholder to share a fixed percentage of the admissible claim. Co-payment percentages must be clearly disclosed at the time of policy issuance. Co-payment cannot be applied to portions of a claim not covered by the co-payment clause.
+
+FREE LOOK PERIOD
+
+IRDAI mandates a free look period of 15 days from receipt of the policy document for policies with a term of one year or more. For long-term policies (more than one year), the free look period is 30 days. During this period, the policyholder may cancel the policy and receive a refund of premium after deducting proportionate risk premium for the period on cover and expenses incurred by the insurer on medical examination.
+
+GRIEVANCE REDRESSAL
+
+Every insurer must have a designated Grievance Redressal Officer. Contact details must be prominently displayed on the insurer's website and in all policy documents. Insurers must acknowledge grievances within 3 working days and resolve them within 15 days.
+
+If a complaint is not resolved to the policyholder's satisfaction within 30 days, the policyholder may approach the Insurance Ombudsman for the relevant jurisdiction.
+
+INSURANCE OMBUDSMAN
+
+The Insurance Ombudsman is an independent authority for resolving disputes between policyholders and insurers. A complaint may be filed before the Ombudsman if:
+- The insurer has rejected the complaint or not responded within 30 days.
+- The complaint relates to a claim not exceeding Rs 30 lakhs.
+- The complaint is made within one year of the insurer's final reply.
+
+The Ombudsman may pass an award directing the insurer to settle the claim, reconsider the rejection, or provide compensation. The award is binding on the insurer.
+
+CASHLESS CLAIMS
+
+For cashless claims, the insurer or Third Party Administrator (TPA) must respond to pre-authorisation requests within one hour for emergency hospitalisation and within two hours for planned hospitalisation. If authorisation is not communicated within this period, the claim should be treated as authorised.
+
+Denial of cashless facility does not constitute denial of the claim. The policyholder may still file a reimbursement claim after discharge.
+
+DOCUMENTATION
+
+Insurers may only request documents that are reasonably necessary to process the claim. Repeated requests for documents that have already been submitted, or requests for documents not relevant to the claim, are not compliant with IRDAI regulations.
+
+If a document is not available due to circumstances beyond the policyholder's control (such as hospital records being unavailable), the insurer must make reasonable efforts to obtain the document rather than rejecting the claim solely on this basis.
+
+MISREPRESENTATION AND FRAUD
+
+Insurers may repudiate a claim on grounds of misrepresentation or fraud only if the misrepresentation was material, intentional, and demonstrably influenced the insurer's decision to issue the policy. Innocent non-disclosure of a condition that was not known to the policyholder at the time of policy issuance is not grounds for repudiation.

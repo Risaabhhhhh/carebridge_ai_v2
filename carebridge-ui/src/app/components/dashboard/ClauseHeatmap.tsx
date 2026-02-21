@@ -2,67 +2,92 @@
 
 import { ClauseRisk, RiskLevel } from "../../types/prepurchase";
 
-interface Props {
-  clauseRisk: ClauseRisk;
-}
+const RISK_CONFIG: Record<RiskLevel, { color: string; bg: string }> = {
+  "High Risk":     { color: "#b94030", bg: "#fdf2f0" },
+  "Moderate Risk": { color: "#9a6c10", bg: "#fdf8ee" },
+  "Low Risk":      { color: "#2d6b3e", bg: "#eef5f0" },
+  "Not Found":     { color: "#8fa896", bg: "#f5f2ec" },
+};
 
-export default function ClauseHeatmap({ clauseRisk }: Props) {
-  const getRiskStyles = (risk: RiskLevel) => {
-    switch (risk) {
-      case "Low Risk":
-        return "bg-green-50 border-green-200 text-green-700";
-      case "Moderate Risk":
-        return "bg-amber-50 border-amber-200 text-amber-700";
-      case "High Risk":
-        return "bg-red-50 border-red-200 text-red-700";
-      case "Not Found":
-      default:
-        return "bg-gray-50 border-gray-200 text-gray-500";
-    }
+const CLAUSE_LABELS: Record<string, string> = {
+  waiting_period:             "Waiting Period",
+  pre_existing_disease:       "Pre-existing Disease",
+  room_rent_sublimit:         "Room Rent Sublimit",
+  disease_specific_caps:      "Disease-Specific Caps",
+  co_payment:                 "Co-payment",
+  exclusions_clarity:         "Exclusions Clarity",
+  claim_procedure_complexity: "Claim Procedure",
+  sublimits_and_caps:         "Sublimits & Caps",
+  restoration_benefit:        "Restoration Benefit",
+  transparency_of_terms:      "Term Transparency",
+};
+
+export default function ClauseHeatmap({ clauseRisk }: { clauseRisk: ClauseRisk }) {
+  const entries = Object.entries(clauseRisk) as [string, RiskLevel][];
+
+  const counts = {
+    "High Risk":     entries.filter(([, v]) => v === "High Risk").length,
+    "Moderate Risk": entries.filter(([, v]) => v === "Moderate Risk").length,
+    "Low Risk":      entries.filter(([, v]) => v === "Low Risk").length,
+    "Not Found":     entries.filter(([, v]) => v === "Not Found").length,
   };
 
-  const formattedClauses = [
-    { key: "waiting_period", label: "Waiting Period" },
-    { key: "pre_existing_disease", label: "Pre-Existing Disease" },
-    { key: "room_rent_sublimit", label: "Room Rent Sublimit" },
-    { key: "disease_specific_caps", label: "Disease Caps" },
-    { key: "co_payment", label: "Co-Payment" },
-    { key: "exclusions_clarity", label: "Exclusions Clarity" },
-    { key: "claim_procedure_complexity", label: "Claim Complexity" },
-    { key: "sublimits_and_caps", label: "Sublimits & Caps" },
-    { key: "restoration_benefit", label: "Restoration Benefit" },
-    { key: "transparency_of_terms", label: "Transparency" },
-  ] as const;
-
   return (
-    <div className="mt-16 animate-fadeUp">
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400&display=swap');
+        .heatmap-card { background: white; border: 1px solid #ddd8ce; border-radius: 4px; overflow: hidden; }
+        .heatmap-header { padding: 16px 24px; border-bottom: 1px solid #ddd8ce; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+        .heatmap-title { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: #8fa896; }
+        .heatmap-legend { display: flex; gap: 16px; flex-wrap: wrap; }
+        .legend-item { display: flex; align-items: center; gap: 6px; font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; }
+        .legend-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+        .heatmap-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: #ddd8ce; border-top: 1px solid #ddd8ce; }
+        .clause-cell { background: white; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; gap: 12px; transition: background 0.15s; cursor: default; }
+        .clause-cell:hover { background: #faf8f3; }
+        .clause-name { font-size: 12px; color: #4a5550; line-height: 1.3; }
+        .clause-badge { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; padding: 4px 10px; border-radius: 2px; white-space: nowrap; flex-shrink: 0; }
+        .heatmap-footer { padding: 14px 24px; border-top: 1px solid #ddd8ce; display: flex; gap: 24px; background: #faf8f3; }
+        .footer-stat { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.08em; color: #8fa896; }
+        .footer-stat strong { color: #0f1512; }
+        @media (max-width: 600px) { .heatmap-grid { grid-template-columns: 1fr; } }
+      `}</style>
 
-      <h2 className="text-2xl font-serif mb-8">
-        Clause Risk Classification
-      </h2>
+      <div className="heatmap-card">
+        <div className="heatmap-header">
+          <span className="heatmap-title">Clause Risk Classification — {entries.length} clauses</span>
+          <div className="heatmap-legend">
+            {(["High Risk", "Moderate Risk", "Low Risk", "Not Found"] as RiskLevel[]).map((level) => (
+              <div key={level} className="legend-item" style={{ color: RISK_CONFIG[level].color }}>
+                <span className="legend-dot" style={{ background: RISK_CONFIG[level].color }} />
+                {level}
+              </div>
+            ))}
+          </div>
+        </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+        <div className="heatmap-grid">
+          {entries.map(([key, value]) => {
+            const cfg = RISK_CONFIG[value] ?? RISK_CONFIG["Not Found"];
+            return (
+              <div key={key} className="clause-cell">
+                <span className="clause-name">{CLAUSE_LABELS[key] ?? key}</span>
+                <span className="clause-badge" style={{ background: cfg.bg, color: cfg.color }}>
+                  {value}
+                </span>
+              </div>
+            );
+          })}
+        </div>
 
-        {formattedClauses.map((clause) => {
-          const risk = clauseRisk[clause.key];
-
-          return (
-            <div
-              key={clause.key}
-              className={`p-6 rounded-lg border ${getRiskStyles(risk)} transition`}
-            >
-              <p className="text-sm font-medium mb-3">
-                {clause.label}
-              </p>
-
-              <p className="text-lg font-semibold">
-                {risk}
-              </p>
-            </div>
-          );
-        })}
-
+        <div className="heatmap-footer">
+          {Object.entries(counts).map(([level, count]) => (
+            <span key={level} className="footer-stat">
+              <strong>{count}</strong> {level}
+            </span>
+          ))}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
