@@ -28,6 +28,8 @@ export default function Home() {
         .nav-links a:hover{color:#d8eedd;}
         .nav-cta{background:var(--sage)!important;color:#e8f0ea!important;padding:10px 22px;border-radius:2px;border:1px solid #3d7a52!important;transition:background .2s!important;}
         .nav-cta:hover{background:var(--sage2)!important;}
+        .nav-help{color:#c8a84a!important;border-bottom:1.5px solid rgba(200,168,74,.3);padding-bottom:1px;}
+        .nav-help:hover{color:#e8d080!important;border-color:#c8a84a;}
 
         /* HERO */
         .hero{min-height:100vh;display:grid;grid-template-columns:1fr 1fr;position:relative;overflow:hidden;}
@@ -90,23 +92,44 @@ export default function Home() {
         .step-title{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:500;color:#e8f0ea;line-height:1.2;}
         .step-desc{font-size:14px;font-weight:400;line-height:1.78;color:rgba(255,255,255,.42);padding-left:74px;}
 
-        /* HELP */
-        .help-strip{background:var(--paper);border-top:1px solid var(--border);padding:96px 64px;}
-        .help-strip-inner{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:300px 1fr;gap:72px;align-items:start;}
-        .help-eyebrow{font-family:'DM Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--mist);margin-bottom:18px;}
-        .help-title{font-family:'Cormorant Garamond',serif;font-size:clamp(30px,3vw,44px);font-weight:500;line-height:1.1;margin-bottom:18px;color:var(--ink);}
+        /* HELP / ESCALATION SECTION */
+        .help-strip{background:var(--paper);border-top:1px solid var(--border);padding:100px 64px;}
+        .help-strip-inner{max-width:1200px;margin:0 auto;}
+        .help-hdr{display:flex;justify-content:space-between;align-items:flex-end;gap:32px;margin-bottom:52px;}
+        .help-eyebrow{font-family:'DM Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--mist);margin-bottom:14px;}
+        .help-title{font-family:'Cormorant Garamond',serif;font-size:clamp(34px,3.5vw,50px);font-weight:500;line-height:1.08;color:var(--ink);}
         .help-title em{font-style:italic;color:var(--sage);}
-        .help-sub{font-size:14px;font-weight:400;color:var(--ink2);line-height:1.8;margin-bottom:28px;}
-        .help-cta{display:inline-flex;align-items:center;gap:8px;font-family:'DM Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.13em;text-transform:uppercase;color:var(--sage);text-decoration:none;border-bottom:1.5px solid rgba(30,92,46,.4);padding-bottom:2px;transition:border-color .2s;}
-        .help-cta:hover{border-color:var(--sage);}
-        .help-orgs{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);border:1px solid var(--border);border-radius:4px;overflow:hidden;}
-        .help-org{background:white;padding:22px 24px;display:flex;flex-direction:column;gap:7px;text-decoration:none;color:inherit;transition:background .15s;}
+        .help-hdr-right{display:flex;flex-direction:column;align-items:flex-end;gap:16px;flex-shrink:0;}
+        .help-sub{font-size:14px;font-weight:400;color:var(--ink2);line-height:1.8;max-width:340px;text-align:right;}
+        .help-cta{display:inline-flex;align-items:center;gap:8px;font-family:'DM Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.13em;text-transform:uppercase;color:#e8f0ea;text-decoration:none;background:var(--sage);padding:12px 22px;border-radius:2px;border:1px solid #3d7a52;transition:background .2s;}
+        .help-cta:hover{background:var(--sage2);}
+        /* helplines bar */
+        .help-helplines{background:var(--ink);border-radius:4px;padding:20px 28px;display:flex;align-items:center;gap:0;margin-bottom:32px;}
+        .help-hl-label{font-family:'DM Mono',monospace;font-size:10px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.3);flex-shrink:0;margin-right:36px;}
+        .help-hl-items{display:flex;gap:0;flex:1;}
+        .help-hl-item{display:flex;flex-direction:column;gap:2px;padding-right:32px;margin-right:32px;border-right:1px solid rgba(255,255,255,.1);}
+        .help-hl-item:last-child{border-right:none;padding-right:0;margin-right:0;}
+        .help-hl-name{font-family:'DM Mono',monospace;font-size:9px;font-weight:400;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.3);}
+        .help-hl-num{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:500;color:#d8eedd;}
+        /* step cards */
+        .help-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:4px;overflow:hidden;margin-bottom:24px;}
+        .help-step{background:white;padding:22px 22px;display:flex;flex-direction:column;gap:8px;transition:background .15s;}
+        .help-step:hover{background:#faf7f2;}
+        .help-step-num{font-family:'DM Mono',monospace;font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--mist);}
+        .help-step-title{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:500;color:var(--ink);line-height:1.25;}
+        .help-step-desc{font-size:12px;font-weight:400;color:var(--ink2);line-height:1.65;}
+        /* resource cards grid */
+        .help-orgs{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:4px;overflow:hidden;}
+        .help-org{background:white;padding:20px 20px;display:flex;flex-direction:column;gap:7px;text-decoration:none;color:inherit;transition:background .15s;}
         .help-org:hover{background:var(--cream);}
-        .help-org-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
-        .help-org-name{font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:500;color:var(--ink);}
-        .help-org-type{font-family:'DM Mono',monospace;font-size:9px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;padding:3px 8px;border-radius:2px;flex-shrink:0;}
-        .help-org-desc{font-size:12px;font-weight:400;line-height:1.68;color:var(--ink2);}
-        .help-org-action{font-family:'DM Mono',monospace;font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--sage);display:flex;align-items:center;gap:4px;margin-top:4px;}
+        .help-org-top{display:flex;justify-content:space-between;align-items:flex-start;gap:6px;}
+        .help-org-name{font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:500;color:var(--ink);line-height:1.25;}
+        .help-org-type{font-family:'DM Mono',monospace;font-size:8px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;padding:3px 7px;border-radius:2px;flex-shrink:0;margin-top:2px;}
+        .help-org-desc{font-size:12px;font-weight:400;line-height:1.65;color:var(--ink2);flex:1;}
+        .help-org-action{font-family:'DM Mono',monospace;font-size:9px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--sage);display:flex;align-items:center;gap:4px;margin-top:4px;}
+        .help-orgs-footer{margin-top:12px;display:flex;justify-content:flex-end;}
+        .help-orgs-link{font-family:'DM Mono',monospace;font-size:10px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--sage);text-decoration:none;display:inline-flex;align-items:center;gap:6px;border-bottom:1px solid rgba(30,92,46,.3);padding-bottom:2px;transition:border-color .2s;}
+        .help-orgs-link:hover{border-color:var(--sage);}
 
         /* CTA */
         .cta-band{background:var(--cream);border-top:1px solid var(--border);padding:112px 64px;text-align:center;position:relative;overflow:hidden;}
@@ -133,8 +156,10 @@ export default function Home() {
           .footer{flex-direction:column;gap:28px;text-align:center;}
           .footer-links{justify-content:center;}
           .cta-band,.help-strip{padding:80px 28px;}
-          .help-strip-inner{grid-template-columns:1fr;gap:40px;}
-          .help-orgs{grid-template-columns:1fr;}
+          .help-helplines{flex-direction:column;align-items:flex-start;gap:12px;}
+          .help-hl-label{margin-right:0;}
+          .help-hl-items{flex-wrap:wrap;gap:12px;}
+          .help-steps,.help-orgs{grid-template-columns:1fr 1fr;}
         }
       `}</style>
 
@@ -144,7 +169,7 @@ export default function Home() {
           <li><a href="/prepurchase">Analyze Policy</a></li>
           <li><a href="/audit">Claim Audit</a></li>
           <li><a href="/compare">Compare</a></li>
-          <li><a href="/learn">Learn</a></li>
+          <li><a href="/support" className="nav-help">Get Help</a></li>
           <li><a href="/prepurchase" className="nav-cta">Get Started</a></li>
         </ul>
       </nav>
@@ -234,18 +259,61 @@ export default function Home() {
 
       <section className="help-strip">
         <div className="help-strip-inner">
-          <div>
-            <div className="help-eyebrow">Support & Resources</div>
-            <h2 className="help-title">Rejected?<br/><em>Help exists.</em></h2>
-            <p className="help-sub">Free regulators, legal aid, and NGOs can assist with insurance disputes — no lawyer required for most escalations.</p>
-            <a href="/audit" className="help-cta">Audit your rejection ↗</a>
+          <div className="help-hdr">
+            <div>
+              <div className="help-eyebrow">Escalation & Assistance</div>
+              <h2 className="help-title">Rejected?<br/><em>You have recourse.</em></h2>
+            </div>
+            <div className="help-hdr-right">
+              <p className="help-sub">
+                Official regulators, legal aid, and financial assistance —
+                separated by function with a structured letter generator.
+              </p>
+              <a href="/support" className="help-cta">Open escalation tool ↗</a>
+            </div>
           </div>
+
+          {/* Free helplines bar */}
+          <div className="help-helplines">
+            <span className="help-hl-label">Free helplines</span>
+            <div className="help-hl-items">
+              {[
+                {name:"IRDAI Helpline",    num:"155255"},
+                {name:"IRDAI Toll-free",   num:"1800 4254 732"},
+                {name:"Consumer Helpline", num:"1800-11-4000"},
+                {name:"NALSA Legal Aid",   num:"15100"},
+              ].map((h,i)=>(
+                <div key={i} className="help-hl-item">
+                  <span className="help-hl-name">{h.name}</span>
+                  <span className="help-hl-num">{h.num}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Escalation steps */}
+          <div className="help-steps">
+            {[
+              {n:"01",title:"Insurer GRO",          desc:"File written complaint. Insurer must respond in 15 days."},
+              {n:"02",title:"IRDAI IGMS",            desc:"Escalate to IRDAI portal if insurer doesn't respond."},
+              {n:"03",title:"Insurance Ombudsman",   desc:"Free binding resolution. Claims up to Rs 50 lakhs."},
+              {n:"04",title:"Consumer Court",        desc:"Deficiency of service under CPA 2019. No lawyer needed."},
+            ].map((s,i)=>(
+              <div key={i} className="help-step">
+                <div className="help-step-num">{s.n}</div>
+                <div className="help-step-title">{s.title}</div>
+                <div className="help-step-desc">{s.desc}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* 4 key resources */}
           <div className="help-orgs">
             {[
-              {name:"IRDAI IGMS",type:"Regulator",desc:"File official complaints if insurer hasn't responded in 15 days.",action:"igms.irda.gov.in",url:"https://igms.irda.gov.in/",color:"#1e5c2e",bg:"#d6eddc"},
-              {name:"Insurance Ombudsman",type:"Quasi-Judicial",desc:"Free, binding resolution for claims up to Rs 50 lakhs.",action:"cioins.co.in",url:"https://cioins.co.in/",color:"#2d3f7a",bg:"#d8dff5"},
-              {name:"NALSA Legal Aid",type:"Legal Aid",desc:"Free lawyers for eligible citizens. Covers consumer forum cases.",action:"nalsa.gov.in",url:"https://nalsa.gov.in/",color:"#3a5c10",bg:"#daecd0"},
-              {name:"Consumer Forum",type:"Legal",desc:"Insurance rejections qualify as deficiency of service under CPA 2019.",action:"edaakhil.nic.in",url:"https://edaakhil.nic.in/",color:"#6a3a10",bg:"#f0deca"},
+              {name:"IRDAI IGMS",          type:"Regulator",     desc:"Official complaint portal. 15-day response mandate.",       action:"igms.irda.gov.in",  url:"https://igms.irda.gov.in/",   color:"#1e5c2e",bg:"#d6eddc"},
+              {name:"Insurance Ombudsman", type:"Quasi-Judicial", desc:"Free, binding. Claims up to Rs 50 lakhs. 17 offices.",     action:"cioins.co.in",       url:"https://cioins.co.in/",       color:"#2d3f8a",bg:"#d8dff5"},
+              {name:"NALSA Legal Aid",     type:"Legal Aid",      desc:"Free lawyers for eligible citizens. Consumer forum.",       action:"nalsa.gov.in",       url:"https://nalsa.gov.in/",       color:"#3a5c10",bg:"#daecd0"},
+              {name:"Consumer Forum",      type:"Legal",          desc:"CPA 2019 covers insurance. Online filing. No advocate.",   action:"edaakhil.nic.in",    url:"https://edaakhil.nic.in/",    color:"#6a3a10",bg:"#f0deca"},
             ].map((org,i)=>(
               <a key={i} href={org.url} target="_blank" rel="noopener noreferrer" className="help-org">
                 <div className="help-org-top">
@@ -257,8 +325,13 @@ export default function Home() {
               </a>
             ))}
           </div>
+          <div className="help-orgs-footer">
+            <a href="/support" className="help-orgs-link">Generate escalation letter →</a>
+          </div>
         </div>
       </section>
+
+
 
       <section className="cta-band">
         <h2 className="cta-title">Make informed decisions.<br/><em>Before you commit.</em></h2>
@@ -273,7 +346,7 @@ export default function Home() {
           <a href="/prepurchase">Policy Analysis</a>
           <a href="/audit">Claim Audit</a>
           <a href="/compare">Compare</a>
-          <a href="/learn">Learn</a>
+          <a href="/support">Get Help</a>
         </div>
       </footer>
     </>

@@ -7,7 +7,8 @@ const NAV_ITEMS = [
   { name: "Analyze Policy",   href: "/prepurchase" },
   { name: "Audit Rejection",  href: "/audit" },
   { name: "Compare Policies", href: "/compare" },
-  { name: "Learn",            href: "/learn" },
+  {name : "learn", href: "/learn"},
+  { name: "Get Help",         href: "/support" },
 ];
 
 export default function Navbar() {
@@ -53,17 +54,22 @@ export default function Navbar() {
         .nav-link:hover::after { width: 100%; }
         .nav-link.active        { color: #d4ead9; }
         .nav-link.active::after { width: 100%; }
+        /* "Get Help" gets a subtle accent treatment */
+        .nav-link.help-link { color: #c8a84a; }
+        .nav-link.help-link::after { background: #c8a84a; }
+        .nav-link.help-link:hover { color: #e8d080; }
+        .nav-link.help-link.active { color: #e8d080; }
         .nav-cta {
           font-family: 'DM Mono', monospace;
           font-size: 11px; font-weight: 500;
           letter-spacing: 0.14em; text-transform: uppercase;
           text-decoration: none;
-          background: #2d5a3d; color: #e8f0ea;
+          background: #1e5c2e; color: #e8f0ea;
           padding: 11px 24px; border-radius: 2px;
           transition: background 0.2s;
           border: 1px solid #3d7a52;
         }
-        .nav-cta:hover { background: #3d7a52; }
+        .nav-cta:hover { background: #2d7a42; }
         .nav-mobile-toggle {
           display: none; flex-direction: column; gap: 5px;
           cursor: pointer; background: none; border: none; padding: 4px;
@@ -85,7 +91,10 @@ export default function Navbar() {
           <ul className="nav-links">
             {NAV_ITEMS.map((item) => (
               <li key={item.href}>
-                <Link href={item.href} className={`nav-link ${pathname === item.href ? "active" : ""}`}>
+                <Link
+                  href={item.href}
+                  className={`nav-link ${item.href === "/support" ? "help-link" : ""} ${pathname === item.href ? "active" : ""}`}
+                >
                   {item.name}
                 </Link>
               </li>

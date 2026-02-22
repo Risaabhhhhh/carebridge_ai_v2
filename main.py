@@ -3,7 +3,7 @@
 import os
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -11,15 +11,14 @@ from llm.model_loader import ModelLoader
 from engines.post_rejection_engine import PostRejectionEngine
 from engines.pre_purchase_engine import PrePurchaseEngine
 from engines.policy_comparison_engine import PolicyComparisonEngine
-from schemas.request import PostRejectionRequest, PrePurchaseRequest
 
+from schemas.request import PostRejectionRequest, PrePurchaseRequest
 from schemas.chat import ReportChatResponse
 from schemas.policy_comparison import PolicyComparisonReport
 
 from services.report_chat_service import run_report_chat
 from services.chat_memory import create_session
 
-from fastapi import File, UploadFile
 import pdfplumber
 import pytesseract
 from PIL import Image
@@ -27,7 +26,7 @@ import io
 
 
 # --------------------------------------------------
-# Engine registry — populated at startup
+# Engine registry
 # --------------------------------------------------
 
 _engines: dict = {}
@@ -35,33 +34,21 @@ _engines: dict = {}
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Load model and engines once at startup, clean up on shutdown."""
+    """Load model & engines at startup."""
     print("🔄 CareBridge AI starting up...")
 
     loader = ModelLoader()
     model, tokenizer = loader.get_model()
 
-    _engines["post_rejection"]  = PostRejectionEngine(model, tokenizer)
-    _engines["pre_purchase"]    = PrePurchaseEngine(model, tokenizer)
-    _engines["comparison"]      = PolicyComparisonEngine(model, tokenizer)
-    _engines["model"]           = model
-    _engines["tokenizer"]       = tokenizer
+    _engines["post_rejection"] = PostRejectionEngine(model, tokenizer)
+    _engines["pre_purchase"]   = PrePurchaseEngine(model, tokenizer)
+    _engines["comparison"]     = PolicyComparisonEngine(model, tokenizer)
+    _engines["model"]          = model
+    _engines["tokenizer"]      = tokenizer
 
     print("✅ All engines ready")
     yield
     print("🔄 CareBridge AI shutting down...")
-
-
-# --------------------------------------------------
-# CORS — env-driven for prod safety
-# --------------------------------------------------
-
-_RAW_ORIGINS = os.getenv(
-    "ALLOWED_ORIGINS",
-    "http://localhost:3000,https://*.ngrok-free.app,https://*.ngrok-free.dev"
-)
-
-ALLOWED_ORIGINS = [o.strip() for o in _RAW_ORIGINS.split(",")]
 
 
 # --------------------------------------------------
@@ -74,15 +61,17 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# ✅ wildcard allowed for dev + ngrok restarts
+# --------------------------------------------------
+# CORS FIX (important for localhost + ngrok)
+# --------------------------------------------------
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # prevents CORS failures after ngrok restart
+    allow_origins=["*"],   # allows localhost & ngrok
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 
 # --------------------------------------------------
 # Health Check
@@ -104,7 +93,7 @@ def audit(request: PostRejectionRequest):
         return result.model_dump()
     except Exception as e:
         print("⚠️ /audit error:", e)
-        raise HTTPException(status_code=500, detail="Audit engine error. Please try again.")
+        raise HTTPException(500, "Audit engine error. Please try again.")
 
 
 # --------------------------------------------------
@@ -118,16 +107,16 @@ def prepurchase(request: PrePurchaseRequest):
         return result.model_dump()
     except Exception as e:
         print("⚠️ /prepurchase error:", e)
-        raise HTTPException(status_code=500, detail="Pre-purchase engine error. Please try again.")
+        raise HTTPException(500, "Pre-purchase engine error. Please try again.")
 
 
 # --------------------------------------------------
-# Report Chat — one-shot (no session)
+# Report Chat
 # --------------------------------------------------
 
 class ReportChatRequest(BaseModel):
     report_data: dict
-    question:    str
+    question: str
 
 
 @app.post("/report-chat", response_model=ReportChatResponse)
@@ -142,7 +131,7 @@ def report_chat(request: ReportChatRequest):
         return result.model_dump()
     except Exception as e:
         print("⚠️ /report-chat error:", e)
-        raise HTTPException(status_code=500, detail="Chat service error. Please try again.")
+        raise HTTPException(500, "Chat service error.")
 
 
 # --------------------------------------------------
@@ -151,9 +140,6 @@ def report_chat(request: ReportChatRequest):
 
 @app.post("/prepurchase/upload")
 async def prepurchase_upload(file: UploadFile = File(...)):
-    """
-    Accept PDF or image, extract text, run pre-purchase analysis.
-    """
     try:
         content = await file.read()
         extracted_text = ""
@@ -161,9 +147,9 @@ async def prepurchase_upload(file: UploadFile = File(...)):
         if file.content_type == "application/pdf" or file.filename.endswith(".pdf"):
             with pdfplumber.open(io.BytesIO(content)) as pdf:
                 for page in pdf.pages:
-                    page_text = page.extract_text()
-                    if page_text:
-                        extracted_text += page_text + "\n"
+                    text = page.extract_text()
+                    if text:
+                        extracted_text += text + "\n"
 
         elif file.content_type.startswith("image/"):
             image = Image.open(io.BytesIO(content))
@@ -172,10 +158,10 @@ async def prepurchase_upload(file: UploadFile = File(...)):
         else:
             extracted_text = content.decode("utf-8", errors="ignore")
 
-        if not extracted_text or len(extracted_text.strip()) < 100:
+        if not extracted_text.strip() or len(extracted_text) < 100:
             raise HTTPException(
                 status_code=422,
-                detail="Could not extract sufficient text from the uploaded file. Try pasting the policy text directly."
+                detail="Could not extract sufficient text."
             )
 
         result = _engines["pre_purchase"].run(extracted_text)
@@ -185,11 +171,11 @@ async def prepurchase_upload(file: UploadFile = File(...)):
         raise
     except Exception as e:
         print("⚠️ /prepurchase/upload error:", e)
-        raise HTTPException(status_code=500, detail="File processing failed.")
+        raise HTTPException(500, "File processing failed.")
 
 
 # --------------------------------------------------
-# Chat Session — multi-turn with memory
+# Chat Session
 # --------------------------------------------------
 
 class CreateChatSessionRequest(BaseModel):
@@ -198,7 +184,7 @@ class CreateChatSessionRequest(BaseModel):
 
 class ContinueChatRequest(BaseModel):
     session_id: str
-    question:   str
+    question: str
 
 
 @app.post("/chat-session")
@@ -208,7 +194,7 @@ def create_chat_session(request: CreateChatSessionRequest):
         return {"session_id": session_id}
     except Exception as e:
         print("⚠️ /chat-session error:", e)
-        raise HTTPException(status_code=500, detail="Failed to create chat session.")
+        raise HTTPException(500, "Failed to create chat session.")
 
 
 @app.post("/chat")
@@ -223,7 +209,7 @@ def continue_chat(request: ContinueChatRequest):
         return result.model_dump()
     except Exception as e:
         print("⚠️ /chat error:", e)
-        raise HTTPException(status_code=500, detail="Chat service error. Please try again.")
+        raise HTTPException(500, "Chat service error.")
 
 
 # --------------------------------------------------
@@ -245,4 +231,4 @@ def compare_policies(request: PolicyComparisonRequest):
         return result.model_dump()
     except Exception as e:
         print("⚠️ /compare error:", e)
-        raise HTTPException(status_code=500, detail="Comparison engine error. Please try again.")
+        raise HTTPException(500, "Comparison engine error.")
