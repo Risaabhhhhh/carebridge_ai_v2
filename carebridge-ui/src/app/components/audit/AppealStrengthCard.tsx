@@ -3,9 +3,9 @@
 import { AppealStrength } from "../../types/audit";
 
 const APPEAL_CONFIG = {
-  Strong:   { color: "#2d6b3e", bg: "#eef5f0", track: "#c8e0cc" },
-  Moderate: { color: "#9a6c10", bg: "#fdf8ee", track: "#e8d5a0" },
-  Weak:     { color: "#b94030", bg: "#fdf2f0", track: "#f0c4be" },
+  Strong:   { color: "#1e5c2e", bg: "#d6eddc", border: "#9dd0aa", track: "#9dd0aa" },
+  Moderate: { color: "#7a4e08", bg: "#faecd0", border: "#e0b870", track: "#e0b870" },
+  Weak:     { color: "#8c1f14", bg: "#f5d0cc", border: "#e08070", track: "#e08070" },
 };
 
 export default function AppealStrengthCard({ appeal }: { appeal: AppealStrength }) {
@@ -14,92 +14,37 @@ export default function AppealStrengthCard({ appeal }: { appeal: AppealStrength 
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=DM+Mono:wght@300;400&display=swap');
-        .appeal-card {
-          background: white;
-          border: 1px solid #ddd8ce;
-          border-radius: 4px;
-          overflow: hidden;
-        }
-        .appeal-card-header {
-          padding: 16px 24px;
-          border-bottom: 1px solid #ddd8ce;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-        .appeal-card-label {
-          font-family: 'DM Mono', monospace;
-          font-size: 10px;
-          letter-spacing: 0.15em;
-          text-transform: uppercase;
-          color: #8fa896;
-        }
-        .appeal-card-body { padding: 28px 24px; }
-        .appeal-row {
-          display: flex;
-          align-items: center;
-          gap: 28px;
-        }
-        .appeal-pct {
-          font-family: 'Cormorant Garamond', serif;
-          font-size: 64px;
-          font-weight: 300;
-          line-height: 1;
-          flex-shrink: 0;
-        }
-        .appeal-pct sup {
-          font-size: 24px;
-          opacity: 0.5;
-          vertical-align: super;
-        }
-        .appeal-meta { flex: 1; }
-        .appeal-verdict {
-          font-family: 'Cormorant Garamond', serif;
-          font-size: 26px;
-          font-weight: 300;
-          margin-bottom: 10px;
-        }
-        .appeal-bar-track {
-          height: 4px;
-          border-radius: 2px;
-          margin-bottom: 14px;
-          overflow: hidden;
-        }
-        .appeal-bar-fill {
-          height: 100%;
-          border-radius: 2px;
-          transition: width 0.9s ease;
-        }
-        .appeal-reasoning {
-          font-size: 12px;
-          line-height: 1.7;
-          color: #5a6560;
-          font-style: italic;
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600&family=DM+Mono:wght@400;500&family=Outfit:wght@400;500&display=swap');
+        .asc { background: #fff; border: 1px solid #c8c2b8; border-radius: 4px; overflow: hidden; }
+        .asc-hdr { padding: 14px 24px; border-bottom: 1px solid #c8c2b8; display: flex; justify-content: space-between; align-items: center; background: #f5f0e8; }
+        .asc-hdr-lbl { font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.13em; text-transform: uppercase; color: #4a5248; }
+        .asc-body { padding: 28px 24px; }
+        .asc-row { display: flex; align-items: center; gap: 28px; }
+        .asc-pct { font-family: 'Cormorant Garamond', serif; font-size: 68px; font-weight: 600; line-height: 1; flex-shrink: 0; }
+        .asc-pct sup { font-size: 26px; opacity: 0.55; vertical-align: super; }
+        .asc-meta { flex: 1; }
+        .asc-verdict { font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 500; margin-bottom: 12px; }
+        .asc-bar-track { height: 6px; border-radius: 3px; margin-bottom: 14px; overflow: hidden; }
+        .asc-bar-fill { height: 100%; border-radius: 3px; transition: width 0.9s ease; }
+        .asc-reasoning { font-family: 'Outfit', sans-serif; font-size: 14px; font-weight: 400; line-height: 1.7; color: #2e3830; font-style: italic; }
       `}</style>
 
-      <div className="appeal-card">
-        <div className="appeal-card-header">
-          <span className="appeal-card-label">Appeal Strength Index</span>
-          <span className="appeal-card-label">{appeal.percentage}%</span>
+      <div className="asc">
+        <div className="asc-hdr">
+          <span className="asc-hdr-lbl">Appeal Strength Index</span>
+          <span className="asc-hdr-lbl">{appeal.percentage}%</span>
         </div>
-        <div className="appeal-card-body">
-          <div className="appeal-row">
-            <div className="appeal-pct" style={{ color: cfg.color }}>
+        <div className="asc-body">
+          <div className="asc-row">
+            <div className="asc-pct" style={{ color: cfg.color }}>
               {appeal.percentage}<sup>%</sup>
             </div>
-            <div className="appeal-meta">
-              <div className="appeal-verdict" style={{ color: cfg.color }}>
-                {appeal.label}
+            <div className="asc-meta">
+              <div className="asc-verdict" style={{ color: cfg.color }}>{appeal.label}</div>
+              <div className="asc-bar-track" style={{ background: cfg.track }}>
+                <div className="asc-bar-fill" style={{ width: `${appeal.percentage}%`, background: cfg.color }} />
               </div>
-              <div className="appeal-bar-track" style={{ background: cfg.track }}>
-                <div
-                  className="appeal-bar-fill"
-                  style={{ width: `${appeal.percentage}%`, background: cfg.color }}
-                />
-              </div>
-              <p className="appeal-reasoning">{appeal.reasoning}</p>
+              <p className="asc-reasoning">{appeal.reasoning}</p>
             </div>
           </div>
         </div>

@@ -1,82 +1,58 @@
 "use client";
 
-interface Props {
-  redFlags:      string[];
-  positiveFlags: string[];
-}
+interface Props { redFlags: string[]; positiveFlags: string[]; }
 
 export default function PolicyFlagsSection({ redFlags, positiveFlags }: Props) {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400&display=swap');
-        .flags-card { background: white; border: 1px solid #ddd8ce; border-radius: 4px; overflow: hidden; }
-        .flags-header { padding: 16px 24px; border-bottom: 1px solid #ddd8ce; display: flex; justify-content: space-between; align-items: center; }
-        .flags-header-label { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: #8fa896; }
-        .flags-grid { display: grid; grid-template-columns: 1fr 1fr; }
-        .flags-col { padding: 24px; }
-        .flags-col + .flags-col { border-left: 1px solid #ddd8ce; }
-        .flags-col-label { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 16px; }
-        .flag-item { display: flex; gap: 10px; align-items: flex-start; padding: 9px 0; border-bottom: 1px solid #f5f2ec; font-size: 12px; line-height: 1.6; color: #4a5550; }
-        .flag-item:last-child { border-bottom: none; }
-        .flag-icon { flex-shrink: 0; margin-top: 2px; font-size: 10px; }
-        .flags-empty { font-size: 12px; color: #c0bfba; font-style: italic; font-family: 'DM Mono', monospace; }
-        .flags-footer { padding: 12px 24px; border-top: 1px solid #ddd8ce; background: #faf8f3; display: flex; gap: 20px; }
-        .flags-footer-stat { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.08em; color: #8fa896; }
-        .flags-footer-stat strong { color: #0f1512; }
+        @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Outfit:wght@400;500&display=swap');
+        .pf { background: #fff; border: 1px solid #c8c2b8; border-radius: 4px; overflow: hidden; }
+        .pf-hdr { padding: 14px 24px; border-bottom: 1px solid #c8c2b8; display: flex; justify-content: space-between; align-items: center; background: #f5f0e8; }
+        .pf-hdr-lbl { font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.13em; text-transform: uppercase; color: #4a5248; }
+        .pf-grid { display: grid; grid-template-columns: 1fr 1fr; }
+        .pf-col { padding: 22px 24px; }
+        .pf-col + .pf-col { border-left: 1px solid #c8c2b8; }
+        .pf-col-lbl { font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 14px; }
+        .pf-item { display: flex; gap: 10px; align-items: flex-start; padding: 9px 0; border-bottom: 1px solid #eee8e0; font-family: 'Outfit', sans-serif; font-size: 13px; font-weight: 400; line-height: 1.6; color: #1a2018; }
+        .pf-item:last-child { border-bottom: none; }
+        .pf-icon { flex-shrink: 0; margin-top: 3px; font-size: 10px; }
+        .pf-empty { font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 400; color: #8a8880; font-style: italic; }
+        .pf-footer { padding: 12px 24px; border-top: 1px solid #c8c2b8; display: flex; gap: 20px; background: #f0ece4; }
+        .pf-fstat { font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 400; letter-spacing: 0.08em; color: #3d4840; }
+        .pf-fstat strong { color: #0f1512; font-weight: 500; }
         @media (max-width: 600px) {
-          .flags-grid { grid-template-columns: 1fr; }
-          .flags-col + .flags-col { border-left: none; border-top: 1px solid #ddd8ce; }
+          .pf-grid { grid-template-columns: 1fr; }
+          .pf-col + .pf-col { border-left: none; border-top: 1px solid #c8c2b8; }
         }
       `}</style>
 
-      <div className="flags-card">
-        <div className="flags-header">
-          <span className="flags-header-label">Policy Signals</span>
-          <span className="flags-header-label">
-            {redFlags.length + positiveFlags.length} total
-          </span>
+      <div className="pf">
+        <div className="pf-hdr">
+          <span className="pf-hdr-lbl">Policy Signals</span>
+          <span className="pf-hdr-lbl">{redFlags.length + positiveFlags.length} total</span>
         </div>
-
-        <div className="flags-grid">
-          {/* Risk flags */}
-          <div className="flags-col">
-            <div className="flags-col-label" style={{ color: "#b94030" }}>
-              Risk Indicators — {redFlags.length}
-            </div>
+        <div className="pf-grid">
+          <div className="pf-col">
+            <div className="pf-col-lbl" style={{ color: "#8c1f14" }}>Risk Indicators — {redFlags.length}</div>
             {redFlags.length > 0 ? redFlags.map((f, i) => (
-              <div key={i} className="flag-item">
-                <span className="flag-icon" style={{ color: "#d95f4b" }}>▲</span>
-                {f}
+              <div key={i} className="pf-item">
+                <span className="pf-icon" style={{ color: "#8c1f14" }}>▲</span>{f}
               </div>
-            )) : (
-              <div className="flags-empty">No major risks detected</div>
-            )}
+            )) : <div className="pf-empty">No major risks detected</div>}
           </div>
-
-          {/* Positive flags */}
-          <div className="flags-col">
-            <div className="flags-col-label" style={{ color: "#2d6b3e" }}>
-              Strength Indicators — {positiveFlags.length}
-            </div>
+          <div className="pf-col">
+            <div className="pf-col-lbl" style={{ color: "#1e5c2e" }}>Strength Indicators — {positiveFlags.length}</div>
             {positiveFlags.length > 0 ? positiveFlags.map((f, i) => (
-              <div key={i} className="flag-item">
-                <span className="flag-icon" style={{ color: "#3d8a52" }}>◆</span>
-                {f}
+              <div key={i} className="pf-item">
+                <span className="pf-icon" style={{ color: "#1e5c2e" }}>◆</span>{f}
               </div>
-            )) : (
-              <div className="flags-empty">No notable strengths identified</div>
-            )}
+            )) : <div className="pf-empty">No notable strengths identified</div>}
           </div>
         </div>
-
-        <div className="flags-footer">
-          <span className="flags-footer-stat">
-            <strong>{redFlags.length}</strong> risk indicators
-          </span>
-          <span className="flags-footer-stat">
-            <strong>{positiveFlags.length}</strong> strength indicators
-          </span>
+        <div className="pf-footer">
+          <span className="pf-fstat"><strong>{redFlags.length}</strong> risk indicators</span>
+          <span className="pf-fstat"><strong>{positiveFlags.length}</strong> strength indicators</span>
         </div>
       </div>
     </>

@@ -121,40 +121,43 @@ def report_chat_prompt(
 ) -> str:
     """
     Natural language chat prompt — returns plain text explanation, not JSON.
-    Used for follow-up Q&A after report generation.
+    Used for follow-up Q\u0026A after report generation.
     """
 
-    # Format history as readable turns
     history_text = ""
-    for turn in history[-6:]:   # last 3 exchanges to stay within context
+    for turn in history[-6:]:
         role = turn.get("role", "user").capitalize()
-        content = turn.get("content", "")
-        history_text += f"{role}: {content}\n"
+        content_text = turn.get("content", "")
+        history_text += f"{role}: {content_text}\n"
 
-    return f"""You are a helpful insurance claim advisor explaining a post-rejection audit report to a policyholder.
+    # Build rich report context so model always has something to draw from
+    appeal = report_data.get("appeal_strength", {})
+    steps  = report_data.get("reapplication_steps", [])
+    weak   = report_data.get("weak_points", [])
+    strong = report_data.get("strong_points", [])
 
-STRICT RULES:
-- Use ONLY the information in the report data below.
-- Do NOT invent policy clauses, legal outcomes, or medical facts.
-- Do NOT predict whether the appeal will succeed.
-- Do NOT give legal advice.
-- Speak clearly and simply — the user may not be familiar with insurance terminology.
-- If the question cannot be answered from the report, say so honestly.
-- Respond in plain conversational English. Do NOT output JSON.
+    return f"""You are an insurance claim advisor helping a policyholder understand their post-rejection audit.
+Give a clear, direct, helpful answer of 2-4 sentences. Always draw from the report data provided.
+Do not output JSON. Do not say you cannot help. Do not use bullet points — write in plain prose.
+If the question is about appeal strength, mention the percentage and reasoning.
+If the question is about next steps, give specific actionable advice.
 
-REPORT SUMMARY:
-- Rejection reason: {report_data.get("why_rejected", "Not available")}
-- Clause detected: {report_data.get("policy_clause_detected", "Not available")}
-- Clause alignment: {report_data.get("clause_alignment", "Not available")}
-- Appeal strength: {report_data.get("appeal_strength", {}).get("label", "Not available")} ({report_data.get("appeal_strength", {}).get("percentage", "N/A")}%)
-- Confidence: {report_data.get("confidence", "Not available")}
-- Key weak points: {"; ".join(report_data.get("weak_points", [])) or "None"}
-- Key strong points: {"; ".join(report_data.get("strong_points", [])) or "None"}
+REPORT DATA:
+- Rejection reason: {report_data.get("why_rejected", "Not specified")}
+- Policy clause: {report_data.get("policy_clause_detected", "Not identified")}
+- Clause alignment: {report_data.get("clause_alignment", "Unknown")}
+- Appeal strength: {appeal.get("label", "Unknown")} ({appeal.get("percentage", 0)}%)
+- Appeal reasoning: {appeal.get("reasoning", "Not available")}
+- Can reapply: {report_data.get("reapplication_possible", False)}
+- Strong points: {"; ".join(strong) if strong else "None identified"}
+- Weak points: {"; ".join(weak) if weak else "None identified"}
+- Next steps: {"; ".join(steps[:3]) if steps else "File complaint with GRO, then IRDAI IGMS"}
+- Regulatory context: {str(report_data.get("regulatory_considerations", ""))[:300]}
+- Confidence: {report_data.get("confidence", "Unknown")}
 
 CONVERSATION HISTORY:
-{history_text or "No previous conversation."}
+{history_text or "None"}
 
-USER QUESTION:
-{user_question}
+USER QUESTION: {user_question}
 
-YOUR RESPONSE:"""
+ANSWER (2-4 sentences, plain English, based on the report data above):"""

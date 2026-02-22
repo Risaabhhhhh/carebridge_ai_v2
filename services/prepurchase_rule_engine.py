@@ -3,41 +3,43 @@ def extract_structured_features(policy_text: str):
     Extract deterministic insurance policy features
     for risk overrides and scoring.
 
-    Lightweight, fast, and explainable.
+    Improved keyword coverage.
     """
 
     text = policy_text.lower()
 
     features = {
-        # ----------------------------------
-        # Waiting Period Detection
-        # ----------------------------------
+        # Waiting Period
         "has_waiting_period": "waiting period" in text,
         "waiting_period_years": (
-            4 if "4 year" in text else
-            3 if "3 year" in text else
-            2 if "2 year" in text else
-            1 if "1 year" in text else 0
+            4 if "48 month" in text or "4 year" in text else
+            3 if "36 month" in text or "3 year" in text else
+            2 if "24 month" in text or "2 year" in text else
+            1 if "12 month" in text or "1 year" in text else 0
         ),
 
-        # ----------------------------------
-        # Pre-existing Disease
-        # ----------------------------------
-        "mentions_pre_existing": "pre-existing" in text or "pre existing" in text,
+        # Pre-existing disease
+        "mentions_pre_existing": any(k in text for k in [
+            "pre-existing",
+            "pre existing",
+            "preexisting"
+        ]),
 
-        # ----------------------------------
-        # Room Rent Limits
-        # ----------------------------------
+        # Room rent
         "room_rent_cap": "room rent" in text,
         "room_rent_percent": (
             1 if "1%" in text else
-            2 if "2%" in text else 0
+            2 if "2%" in text else
+            3 if "3%" in text else 0
         ),
 
-        # ----------------------------------
         # Co-payment
-        # ----------------------------------
-        "co_payment": "co-pay" in text or "copay" in text or "co payment" in text,
+        "co_payment": any(k in text for k in [
+            "co-pay",
+            "copay",
+            "co payment",
+            "co-payment"
+        ]),
         "co_payment_percentage": (
             30 if "30%" in text else
             25 if "25%" in text else
@@ -45,48 +47,47 @@ def extract_structured_features(policy_text: str):
             10 if "10%" in text else 0
         ),
 
-        # ----------------------------------
-        # Disease Caps / Sublimits
-        # ----------------------------------
-        "disease_caps": any(keyword in text for keyword in [
+        # Disease caps / sublimits
+        "disease_caps": any(k in text for k in [
             "capped",
+            "cap at",
+            "limited to",
             "limit per",
             "maximum payable",
             "sublimit",
-            "sub-limit"
+            "sub-limit",
+            "sublimits"
         ]),
 
-        # ----------------------------------
-        # Consumables / Non-medical Exclusion
-        # ----------------------------------
-        "consumables_exclusion": any(keyword in text for keyword in [
-            "non-medical consumables",
+        # Consumables
+        "consumables_exclusion": any(k in text for k in [
+            "non-medical",
             "consumables excluded",
             "ppe kit",
             "gloves",
             "administrative charges"
         ]),
 
-        # ----------------------------------
-        # Restoration Benefit
-        # ----------------------------------
-        "restoration_benefit": "restoration benefit" in text,
-
-        # ----------------------------------
-        # Procedural Requirements
-        # ----------------------------------
-        "procedural_conditions": any(keyword in text for keyword in [
-            "pre-authorization",
-            "intimation within",
-            "inform within",
-            "documents within",
-            "delay in submission"
+        # Restoration benefit
+        "restoration_benefit": any(k in text for k in [
+            "restoration benefit",
+            "sum insured will be restored",
+            "restored once",
+            "reinstated"
         ]),
 
-        # ----------------------------------
-        # Transparency Indicators
-        # ----------------------------------
-        "free_look_period": "free look period" in text,
+        # Claim procedure complexity
+        "procedural_conditions": any(k in text for k in [
+            "pre-authorization",
+            "pre authorization",
+            "intimation within",
+            "submitted within",
+            "inform within",
+            "documents within"
+        ]),
+
+        # Transparency & compliance
+        "free_look_period": "free look" in text,
         "grievance_redressal": "grievance" in text,
         "ombudsman_reference": "ombudsman" in text,
         "irdai_reference": "irdai" in text,

@@ -29,6 +29,7 @@ import io
 # --------------------------------------------------
 # Engine registry — populated at startup
 # --------------------------------------------------
+
 _engines: dict = {}
 
 
@@ -37,7 +38,7 @@ async def lifespan(app: FastAPI):
     """Load model and engines once at startup, clean up on shutdown."""
     print("🔄 CareBridge AI starting up...")
 
-    loader = ModelLoader()          # singleton — safe to call
+    loader = ModelLoader()
     model, tokenizer = loader.get_model()
 
     _engines["post_rejection"]  = PostRejectionEngine(model, tokenizer)
@@ -54,22 +55,29 @@ async def lifespan(app: FastAPI):
 # --------------------------------------------------
 # CORS — env-driven for prod safety
 # --------------------------------------------------
-_RAW_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000")
+
+_RAW_ORIGINS = os.getenv(
+    "ALLOWED_ORIGINS",
+    "http://localhost:3000,https://*.ngrok-free.app,https://*.ngrok-free.dev"
+)
+
 ALLOWED_ORIGINS = [o.strip() for o in _RAW_ORIGINS.split(",")]
 
 
 # --------------------------------------------------
 # App
 # --------------------------------------------------
+
 app = FastAPI(
     title="CareBridge AI",
     version="2.0.0",
     lifespan=lifespan,
 )
 
+# ✅ wildcard allowed for dev + ngrok restarts
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
+    allow_origins=["*"],   # prevents CORS failures after ngrok restart
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -136,8 +144,10 @@ def report_chat(request: ReportChatRequest):
         print("⚠️ /report-chat error:", e)
         raise HTTPException(status_code=500, detail="Chat service error. Please try again.")
 
-# Add these to main.py
-# Requires: pip install pdfplumber python-multipart pillow pytesseract
+
+# --------------------------------------------------
+# File Upload Analysis
+# --------------------------------------------------
 
 @app.post("/prepurchase/upload")
 async def prepurchase_upload(file: UploadFile = File(...)):
@@ -149,7 +159,6 @@ async def prepurchase_upload(file: UploadFile = File(...)):
         extracted_text = ""
 
         if file.content_type == "application/pdf" or file.filename.endswith(".pdf"):
-            # PDF text extraction
             with pdfplumber.open(io.BytesIO(content)) as pdf:
                 for page in pdf.pages:
                     page_text = page.extract_text()
@@ -157,12 +166,10 @@ async def prepurchase_upload(file: UploadFile = File(...)):
                         extracted_text += page_text + "\n"
 
         elif file.content_type.startswith("image/"):
-            # OCR for images
             image = Image.open(io.BytesIO(content))
             extracted_text = pytesseract.image_to_string(image)
 
         else:
-            # Plain text fallback
             extracted_text = content.decode("utf-8", errors="ignore")
 
         if not extracted_text or len(extracted_text.strip()) < 100:
@@ -179,6 +186,7 @@ async def prepurchase_upload(file: UploadFile = File(...)):
     except Exception as e:
         print("⚠️ /prepurchase/upload error:", e)
         raise HTTPException(status_code=500, detail="File processing failed.")
+
 
 # --------------------------------------------------
 # Chat Session — multi-turn with memory
@@ -209,7 +217,7 @@ def continue_chat(request: ContinueChatRequest):
         result = run_report_chat(
             model=_engines["model"],
             tokenizer=_engines["tokenizer"],
-            session_id=request.session_id,      # session path — no report_data needed
+            session_id=request.session_id,
             user_question=request.question,
         )
         return result.model_dump()

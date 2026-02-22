@@ -32,8 +32,9 @@ export default function RootLayout({
       className={`${playfair.variable} ${inter.variable}`}
     >
       <body className="bg-[#EFE9E1] text-[#1F2933] font-sans antialiased selection:bg-[#899481] selection:text-white">
-        {children}
         <Navbar />
+        {children}
+        
       </body>
     </html>
   );

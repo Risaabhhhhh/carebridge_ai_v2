@@ -75,7 +75,7 @@ class PrePurchaseEngine:
         raw_output = generate(
             prompt, self.model, self.tokenizer,
             json_mode=True,
-            max_new_tokens=150,
+            max_new_tokens=400,
         )
 
         # Retry once with proper validation (not just startswith check)
@@ -85,7 +85,7 @@ class PrePurchaseEngine:
             raw_output = generate(
                 prompt, self.model, self.tokenizer,
                 json_mode=True,
-                max_new_tokens=150,
+                max_new_tokens=400,
             )
             parsed = _safe_json_parse(raw_output)
 

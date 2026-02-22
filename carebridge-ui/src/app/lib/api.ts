@@ -88,5 +88,6 @@ export const comparePolicies = async (
   });
   return response.data;
 };
+console.log("API:", BASE_URL);
 
 export default API;
