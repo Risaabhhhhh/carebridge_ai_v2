@@ -1,17 +1,20 @@
 from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
 import torch
 
-# ✅ Correct HuggingFace model ID for MedGemma 4B instruct
 MODEL_NAME = "google/medgemma-4b-it"
+
 
 class ModelLoader:
     """
-    Singleton model loader — ensures the model is only loaded once
-    regardless of how many times ModelLoader() is called.
-    Critical for 6GB VRAM: double-loading = instant OOM.
+    Singleton loader for MedGemma 4B-IT (4-bit).
+
+    ✔ prevents CUDA device-side assert
+    ✔ forces Gemma padding requirements
+    ✔ ensures pad/eos tokens always valid
+    ✔ optimized for low VRAM environments
     """
 
-    _instance = None  # singleton holder
+    _instance = None
 
     def __new__(cls):
         if cls._instance is None:
@@ -21,39 +24,68 @@ class ModelLoader:
 
     def __init__(self):
         if self._initialized:
-            return  # already loaded, skip
+            return
 
         print("🔄 Loading MedGemma 4B in 4-bit mode...")
 
+        # ─────────────────────────────────────
+        # Quantization (fits in 6GB VRAM)
+        # ─────────────────────────────────────
         bnb_config = BitsAndBytesConfig(
             load_in_4bit=True,
-            bnb_4bit_compute_dtype=torch.float16,   # activations in fp16
-            bnb_4bit_use_double_quant=True,          # saves ~0.4GB extra
-            bnb_4bit_quant_type="nf4",               # best quality/size tradeoff
+            bnb_4bit_compute_dtype=torch.float16,
+            bnb_4bit_use_double_quant=True,
+            bnb_4bit_quant_type="nf4",
         )
 
+        # ─────────────────────────────────────
+        # Tokenizer
+        # ─────────────────────────────────────
         self.tokenizer = AutoTokenizer.from_pretrained(
             MODEL_NAME,
             trust_remote_code=True,
         )
 
-        # ✅ Fix missing pad token (MedGemma tokenizer doesn't set one)
-        if self.tokenizer.pad_token is None:
-            self.tokenizer.pad_token = self.tokenizer.eos_token
+        # 🔥 CRITICAL: Gemma requires pad_token == eos_token
+        # DO NOT conditionally set — FORCE it.
+        self.tokenizer.pad_token = self.tokenizer.eos_token
+        self.tokenizer.pad_token_id = self.tokenizer.eos_token_id
 
+        # decoder-only models prefer left padding
+        self.tokenizer.padding_side = "left"
+
+        # ─────────────────────────────────────
+        # Load model
+        # ─────────────────────────────────────
         self.model = AutoModelForCausalLM.from_pretrained(
             MODEL_NAME,
             quantization_config=bnb_config,
-            dtype=torch.float16,       # ✅ activations in fp16, not float32
+            dtype=torch.float16,          # correct (torch_dtype deprecated)
             device_map="auto",
-            max_memory={0: "5.5GiB", "cpu": "8GiB"},  # ✅ reserve 0.5GB headroom
+            max_memory={0: "5.5GiB", "cpu": "8GiB"},
             trust_remote_code=True,
         )
 
-        self.model.eval()  # ✅ disable dropout, slightly faster inference
+        # ─────────────────────────────────────
+        # 🔥 CRITICAL: Sync model config tokens
+        # prevents CUDA assert & generation crash
+        # ─────────────────────────────────────
+        self.model.config.pad_token_id = self.tokenizer.pad_token_id
+        self.model.config.eos_token_id = self.tokenizer.eos_token_id
 
+        self.model.generation_config.pad_token_id = self.tokenizer.pad_token_id
+        self.model.generation_config.eos_token_id = self.tokenizer.eos_token_id
+
+        # Safety checks
+        assert self.tokenizer.pad_token_id is not None, "pad_token_id is None"
+        assert self.model.config.pad_token_id is not None, "model pad_token_id None"
+
+        self.model.eval()
         self._initialized = True
-        print("✅ MedGemma 4B loaded successfully in 4-bit mode")
+
+        print("✅ MedGemma 4B loaded in 4-bit mode")
+        print(f"   pad_token_id : {self.tokenizer.pad_token_id}")
+        print(f"   eos_token_id : {self.tokenizer.eos_token_id}")
 
     def get_model(self):
         return self.model, self.tokenizer

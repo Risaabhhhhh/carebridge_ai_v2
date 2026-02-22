@@ -1,40 +1,60 @@
 def prepurchase_risk_prompt(policy_text: str) -> str:
-    return f"""You are an IRDAI-compliant Indian health insurance policy risk classifier.
+    """
+    Prompt for MedGemma 4B-IT via apply_chat_template.
 
-Your task: Read the policy text below and classify 10 specific clauses by their risk level to the policyholder.
+    This is the USER turn content only — the system instruction is
+    injected by generation.py via the chat template messages list.
 
-IMPORTANT:
-You MUST classify every clause.
-Use "Not Found" ONLY if the clause is completely absent.
-If wording implies the clause, infer based on meaning.
+    Key design decisions:
+    - Compact classification guide (saves tokens, model still gets full guidance)
+    - Example output right before the policy text (in-context learning)
+    - Explicit "JSON OUTPUT:" marker right at the end (anchors assistant turn)
+    - No unicode box-drawing chars (some tokenizers mangle them)
+    """
+    return f"""Classify 10 health insurance policy clauses by risk level.
 
-NOTE:
-Policies may use synonyms, examples, or indirect wording.
-Infer meaning where applicable.
+ALLOWED VALUES (use EXACT wording only):
+"Low Risk" | "Moderate Risk" | "High Risk" | "Not Found"
 
-ALLOWED VALUES (use exactly as written):
-- "Low Risk"
-- "Moderate Risk"
-- "High Risk"
-- "Not Found"
+Use "Not Found" ONLY if the clause is genuinely absent from the text.
+Infer from synonyms and indirect language — do not default to Not Found.
 
-CLASSIFICATION GUIDE:
-- waiting_period      : How long before claims are valid? (>3 years = High, 1-3 years = Moderate, <1 year = Low)
-- pre_existing_disease: Are pre-existing conditions covered? (excluded entirely = High, partial = Moderate, covered = Low)
-- room_rent_sublimit  : Is room rent capped? (≤1% of SI = High, 1-2% = Moderate, no cap = Low)
-- disease_specific_caps: Are specific diseases capped below SI? (yes = High, minor caps = Moderate, none = Low)
-- co_payment          : Is patient required to pay a share? (≥20% = High, 10-19% = Moderate, <10% = Low)
-- exclusions_clarity  : Are exclusions vague or buried? (vague = High, partial = Moderate, clear = Low)
-- claim_procedure_complexity: Is the claim process complex? (many steps/tight deadlines = High, moderate = Moderate, simple = Low)
-- sublimits_and_caps  : Are there multiple sublimits reducing coverage? (many = High, few = Moderate, none = Low)
-- restoration_benefit : Is exhausted sum insured restored? (not available = High, partial = Moderate, full = Low)
-- transparency_of_terms: Are terms clearly written and accessible? (hidden/complex = High, mixed = Moderate, clear = Low)
+CLASSIFICATION RULES:
+waiting_period: >3yr=High, 1-3yr=Moderate, <1yr=Low (look for months/years)
+pre_existing_disease: excluded=High, partial/conditional=Moderate, covered=Low
+room_rent_sublimit: cap<=1%SI=High, 1-2%=Moderate, no cap=Low
+disease_specific_caps: significant caps=High, minor caps=Moderate, none=Low
+co_payment: >=20%=High, 10-19%=Moderate, <10%=Low (look for co-pay/cost sharing)
+exclusions_clarity: vague/hidden=High, partial=Moderate, clear=Low
+claim_procedure_complexity: strict deadlines/many steps=High, moderate=Moderate, simple=Low
+sublimits_and_caps: multiple=High, few=Moderate, none=Low
+restoration_benefit: absent=High, partial=Moderate, full reinstatement=Low
+transparency_of_terms: complex/hidden=High, mixed=Moderate, clearly defined=Low
 
-STRICT RULES:
-- Output ONLY the JSON object.
-- Do not explain.
-- Do not add text before or after.
-- Use ONLY the allowed values.
+SEMANTIC HINTS:
+- "capped", "limit", "maximum payable" -> disease caps or sublimits
+- "intimation within", "inform within" -> claim complexity
+- "non-medical expenses excluded" -> exclusions clarity
+- "restored after exhaustion", "reinstated" -> restoration benefit
+- "co-pay", "cost sharing" -> co-payment
+- "room rent limited to X% of sum insured" -> room rent sublimit
+- "free look", "grievance", "ombudsman" -> transparency signals
+
+OUTPUT: JSON object with exactly these 10 keys. No text before or after.
+
+EXAMPLE (use real values from the policy, not these):
+{{
+  "waiting_period": "Moderate Risk",
+  "pre_existing_disease": "High Risk",
+  "room_rent_sublimit": "High Risk",
+  "disease_specific_caps": "Moderate Risk",
+  "co_payment": "Low Risk",
+  "exclusions_clarity": "Moderate Risk",
+  "claim_procedure_complexity": "Moderate Risk",
+  "sublimits_and_caps": "Moderate Risk",
+  "restoration_benefit": "High Risk",
+  "transparency_of_terms": "Low Risk"
+}}
 
 POLICY TEXT:
 {policy_text}
