@@ -2,6 +2,8 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import API from "../../lib/api";
+import { PrePurchaseReport } from "../../types/prepurchase";
+import { AuditReport }       from "../../types/audit";
 
 interface Message {
   role:    "user" | "assistant";
@@ -10,8 +12,13 @@ interface Message {
   ts:      number;
 }
 
+// Accept either fully-typed report or a loose record (future contexts).
+// buildLocalAnswer casts internally so the Record<string,unknown>
+// access inside it is safe regardless of which union member is passed.
+type ReportData = PrePurchaseReport | AuditReport | Record<string, unknown>;
+
 interface ReportChatProps {
-  reportData: Record<string, unknown>;
+  reportData: ReportData;
   context:    "prepurchase" | "audit";
 }
 
@@ -35,18 +42,20 @@ const STARTER_QUESTIONS = {
 };
 
 // ── Pure client-side fallback (used when API fails or returns empty) ──────────
-function buildLocalAnswer(question: string, report: Record<string, unknown>, context: string): string {
+function buildLocalAnswer(question: string, report: ReportData, context: string): string {
+  // Cast to loose record for internal key-access — safe because we check existence before use
+  const r = report as Record<string, unknown>;
   const q = question.toLowerCase();
 
   if (context === "prepurchase") {
-    const score    = (report.score_breakdown as Record<string,unknown>)?.adjusted_score as number ?? 0;
-    const rating   = (report.overall_policy_rating as string) ?? "Unknown";
-    const risk     = (report.clause_risk as Record<string,string>) ?? {};
+    const score    = (r.score_breakdown as Record<string,unknown>)?.adjusted_score as number ?? 0;
+    const rating   = (r.overall_policy_rating as string) ?? "Unknown";
+    const risk     = (r.clause_risk as Record<string,string>) ?? {};
     const highKeys = Object.entries(risk).filter(([,v]) => v === "High Risk").map(([k]) => k.replace(/_/g," "));
     const modKeys  = Object.entries(risk).filter(([,v]) => v === "Moderate Risk").map(([k]) => k.replace(/_/g," "));
-    const comply   = (report.irdai_compliance as Record<string,unknown>)?.compliance_rating as string ?? "Unknown";
-    const broker   = (report.broker_risk_analysis as Record<string,unknown>)?.structural_risk_level as string ?? "Unknown";
-    const checklist = (report.checklist_for_buyer as string[]) ?? [];
+    const comply   = (r.irdai_compliance as Record<string,unknown>)?.compliance_rating as string ?? "Unknown";
+    const broker   = (r.broker_risk_analysis as Record<string,unknown>)?.structural_risk_level as string ?? "Unknown";
+    const checklist = (r.checklist_for_buyer as string[]) ?? [];
 
     if (q.includes("risk") || q.includes("biggest") || q.includes("danger") || q.includes("concern")) {
       if (highKeys.length === 0) return `No clauses rated High Risk were detected. Moderate risks include: ${modKeys.slice(0,3).join(", ") || "none identified"}. The overall policy score is ${Math.round(score)}/100 (${rating}).`;
@@ -91,16 +100,16 @@ function buildLocalAnswer(question: string, report: Record<string, unknown>, con
   }
 
   // ── AUDIT context ─────────────────────────────────────────
-  const appeal    = (report.appeal_strength as Record<string,unknown>) ?? {};
+  const appeal    = (r.appeal_strength as Record<string,unknown>) ?? {};
   const pct       = appeal.percentage as number ?? 0;
   const lbl       = appeal.label as string ?? "Unknown";
   const rsn       = appeal.reasoning as string ?? "";
-  const why       = report.why_rejected as string ?? "not specified";
-  const clause    = report.policy_clause_detected as string ?? "not identified";
-  const alignment = report.clause_alignment as string ?? "Unknown";
-  const weak      = (report.weak_points as string[]) ?? [];
-  const strong    = (report.strong_points as string[]) ?? [];
-  const steps     = (report.reapplication_steps as string[]) ?? [];
+  const why       = r.why_rejected as string ?? "not specified";
+  const clause    = r.policy_clause_detected as string ?? "not identified";
+  const alignment = r.clause_alignment as string ?? "Unknown";
+  const weak      = (r.weak_points as string[]) ?? [];
+  const strong    = (r.strong_points as string[]) ?? [];
+  const steps     = (r.reapplication_steps as string[]) ?? [];
 
   if (q.includes("strong") || q.includes("how strong") || q.includes("chance") || q.includes("appeal case")) {
     const extra = pct >= 70 ? "This is a strong position — challenge the rejection formally." : pct >= 40 ? "Worth pursuing — gather the evidence gaps first." : "Difficult case — insurer's position appears well-grounded. Focus on the moratorium rule if policy is 8+ years old.";
