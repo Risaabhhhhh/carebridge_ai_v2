@@ -1,24 +1,13 @@
 import type { Metadata } from "next";
-import { Playfair_Display, Inter } from "next/font/google";
+import { Outfit } from "next/font/google";
 import "./globals.css";
 import Navbar from "./components/layout/Navbar";
 
-const playfair = Playfair_Display({
-  subsets: ["latin"],
-  variable: "--font-serif",
-  display: "swap",
-});
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-sans",
-  display: "swap",
-});
+const outfit = Outfit({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "CareBridge AI | Insurance Intelligence",
-  description:
-    "Structured financial intelligence for health insurance policies. Risk detection, compliance scoring, and broker transparency analysis.",
+  title: "CareBridge — Health Insurance Intelligence",
+  description: "Understand your health insurance policy. Audit rejections. Build your appeal.",
 };
 
 export default function RootLayout({
@@ -27,14 +16,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html
-      lang="en"
-      className={`${playfair.variable} ${inter.variable}`}
-    >
-      <body className="bg-[#EFE9E1] text-[#1F2933] font-sans antialiased selection:bg-[#899481] selection:text-white">
+    <html lang="en">
+      <body className={outfit.className}>
         <Navbar />
         {children}
-        
       </body>
     </html>
   );
