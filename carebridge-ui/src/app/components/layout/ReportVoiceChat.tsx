@@ -457,29 +457,27 @@ export default function ReportVoiceChat({
         {/* Mic button */}
         {speechSupported && (
           <button
-            onMouseDown={startListening}
-            onMouseUp={stopListening}
-            onTouchStart={startListening}
-            onTouchEnd={stopListening}
-            title={listening ? u("listening", lang) : u("mic_on", lang)}
-            style={{
-              width:        "40px",
-              height:       "40px",
-              borderRadius: "50%",
-              border:       `2px solid ${listening ? "#C8A96E" : "#2D5A27"}`,
-              background:   listening ? "#C8A96E22" : "transparent",
-              color:        listening ? "#C8A96E" : "#2D5A27",
-              fontSize:     "18px",
-              cursor:       "pointer",
-              display:      "flex",
-              alignItems:   "center",
-              justifyContent: "center",
-              flexShrink:   0,
-              animation:    listening ? "pulse 1s infinite" : "none",
-            }}
-          >
-            {listening ? "◎" : "🎙"}
-          </button>
+  onClick={() => listening ? stopListening() : startListening()}
+  title={listening ? u("listening", lang) : u("mic_on", lang)}
+  style={{
+    width:        "40px",
+    height:       "40px",
+    borderRadius: "50%",
+    border:       `2px solid ${listening ? "#C8A96E" : "#2D5A27"}`,
+    background:   listening ? "#C8A96E22" : "transparent",
+    color:        listening ? "#C8A96E" : "#2D5A27",
+    fontSize:     "18px",
+    cursor:       "pointer",
+    display:      "flex",
+    alignItems:   "center",
+    justifyContent: "center",
+    flexShrink:   0,
+    animation:    listening ? "pulse 1s infinite" : "none",
+  }}
+>
+  {listening ? "◎" : "🎙"}
+</button>
+          
         )}
 
         {/* Text input */}
