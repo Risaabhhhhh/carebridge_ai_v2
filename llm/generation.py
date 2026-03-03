@@ -8,7 +8,7 @@ def generate(
     prompt: str,
     model,
     tokenizer,
-    max_new_tokens: int = 150,
+    max_new_tokens: int = 200,
     json_mode: bool = False,
     timeout: int = 300,
     temperature: float = 0.0,
@@ -58,7 +58,7 @@ def generate(
             return_tensors="pt",
             add_generation_prompt=True,
             truncation=True,
-            max_length=2800,
+            max_length=1800,
         )
 
         if isinstance(chat_result, torch.Tensor):
@@ -91,7 +91,7 @@ def generate(
                 gemma_prompt,
                 return_tensors="pt",
                 truncation=True,
-                max_length=2800,
+                max_length=1800,
                 add_special_tokens=False,
             ).to(model.device)
 
@@ -123,16 +123,19 @@ def generate(
                     attention_mask=attention_mask,
 
                     max_new_tokens=max_new_tokens,
-                    min_new_tokens=10,
+                    
 
                     # deterministic = safer for structured output
                     do_sample=False,
+                    temperature=0.1,
 
                     repetition_penalty=1.1,
                     use_cache=True,
 
                     eos_token_id=eos_id,
                     pad_token_id=pad_id,
+
+                    early_stopping=True,
                 )
 
             result_container["output"] = output
