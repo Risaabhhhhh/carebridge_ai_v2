@@ -45,7 +45,7 @@ export default function IRDAICompliancePanel({ compliance }: { compliance: IRDAI
         .ip-bar-track { height: 6px; background: #ddd8ce; border-radius: 3px; overflow: hidden; }
         .ip-bar-fill  { height: 100%; border-radius: 3px; transition: width 0.8s ease; }
         .ip-div { height: 1px; background: #e0dbd2; }
-        .ip-flags { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: #c8c2b8; border: 1px solid #c8c2b8; }
+        .ip-flags { grid-template-columns: 1fr 1fr; gap: 1px; background: #c8c2b8; border: 1px solid #c8c2b8; }
         .ip-flag-cell { background: #fff; padding: 13px 18px; display: flex; justify-content: space-between; align-items: center; gap: 8px; transition: background 0.12s; }
         .ip-flag-cell:hover { background: #f5f0e8; }
         .ip-flag-name { font-family: 'Outfit', sans-serif; font-size: 13px; font-weight: 500; color: #1a2018; }

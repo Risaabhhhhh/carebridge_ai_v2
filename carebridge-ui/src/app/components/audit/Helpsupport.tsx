@@ -191,7 +191,7 @@ export default function HelpSupport() {
             </div>
           </div>
 
-          <div className="help-card-header">
+          {/* <div className="help-card-header">
             <span className="help-card-label">Additional Support Organisations</span>
             <span className="help-card-label">{standard.length} resources</span>
           </div>
@@ -240,7 +240,7 @@ export default function HelpSupport() {
               CareBridge does not endorse any specific service. If your claim rejection has caused significant distress,
               please reach out to a mental health helpline — dealing with insurers is genuinely hard, and support is available.
             </span>
-          </div>
+          </div> */}
         </div>
       </div>
     </>

@@ -18,15 +18,11 @@ from schemas.policy_comparison import PolicyComparisonReport
 
 from services.report_chat_service import run_report_chat
 from services.chat_memory import create_session
-
-import pdfplumber
-import pytesseract
-from PIL import Image
-import io
+from services.document_parser import extract_text_from_file   # ✅ NEW CLEAN IMPORT
 
 
 # --------------------------------------------------
-# Engine registry
+# Engine Registry
 # --------------------------------------------------
 
 _engines: dict = {}
@@ -34,17 +30,19 @@ _engines: dict = {}
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Load model & engines at startup."""
+    """
+    Load model & engines at startup.
+    """
     print("🔄 CareBridge AI starting up...")
 
     loader = ModelLoader()
     model, tokenizer = loader.get_model()
 
     _engines["post_rejection"] = PostRejectionEngine(model, tokenizer)
-    _engines["pre_purchase"]   = PrePurchaseEngine(model, tokenizer)
-    _engines["comparison"]     = PolicyComparisonEngine(model, tokenizer)
-    _engines["model"]          = model
-    _engines["tokenizer"]      = tokenizer
+    _engines["pre_purchase"] = PrePurchaseEngine(model, tokenizer)
+    _engines["comparison"] = PolicyComparisonEngine(model, tokenizer)
+    _engines["model"] = model
+    _engines["tokenizer"] = tokenizer
 
     print("✅ All engines ready")
     yield
@@ -52,7 +50,7 @@ async def lifespan(app: FastAPI):
 
 
 # --------------------------------------------------
-# App
+# App Initialization
 # --------------------------------------------------
 
 app = FastAPI(
@@ -62,12 +60,12 @@ app = FastAPI(
 )
 
 # --------------------------------------------------
-# CORS FIX (important for localhost + ngrok)
+# CORS
 # --------------------------------------------------
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # allows localhost & ngrok
+    allow_origins=["*"],  # allows localhost & ngrok
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -79,7 +77,10 @@ app.add_middleware(
 
 @app.get("/")
 def health():
-    return {"status": "CareBridge AI v2 running", "engines": list(_engines.keys())}
+    return {
+        "status": "CareBridge AI v2 running",
+        "engines": list(_engines.keys())
+    }
 
 
 # --------------------------------------------------
@@ -97,7 +98,7 @@ def audit(request: PostRejectionRequest):
 
 
 # --------------------------------------------------
-# Pre-Purchase Analysis
+# Pre-Purchase Analysis (Raw Text)
 # --------------------------------------------------
 
 @app.post("/prepurchase")
@@ -108,6 +109,40 @@ def prepurchase(request: PrePurchaseRequest):
     except Exception as e:
         print("⚠️ /prepurchase error:", e)
         raise HTTPException(500, "Pre-purchase engine error. Please try again.")
+
+
+# --------------------------------------------------
+# Pre-Purchase Analysis (File Upload)
+# --------------------------------------------------
+
+@app.post("/prepurchase/upload")
+async def prepurchase_upload(file: UploadFile = File(...)):
+    try:
+        content = await file.read()
+
+        # ✅ Unified document parsing layer
+        extracted_text = extract_text_from_file(
+            filename=file.filename,
+            content_type=file.content_type,
+            content=content
+        )
+
+        if not extracted_text or len(extracted_text) < 100:
+            raise HTTPException(
+                status_code=422,
+                detail="Could not extract sufficient text from document."
+            )
+
+        print("✅ Extracted text length:", len(extracted_text))
+
+        result = _engines["pre_purchase"].run(extracted_text)
+        return result.model_dump()
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("⚠️ /prepurchase/upload error:", e)
+        raise HTTPException(500, "File processing failed.")
 
 
 # --------------------------------------------------
@@ -135,47 +170,7 @@ def report_chat(request: ReportChatRequest):
 
 
 # --------------------------------------------------
-# File Upload Analysis
-# --------------------------------------------------
-
-@app.post("/prepurchase/upload")
-async def prepurchase_upload(file: UploadFile = File(...)):
-    try:
-        content = await file.read()
-        extracted_text = ""
-
-        if file.content_type == "application/pdf" or file.filename.endswith(".pdf"):
-            with pdfplumber.open(io.BytesIO(content)) as pdf:
-                for page in pdf.pages:
-                    text = page.extract_text()
-                    if text:
-                        extracted_text += text + "\n"
-
-        elif file.content_type.startswith("image/"):
-            image = Image.open(io.BytesIO(content))
-            extracted_text = pytesseract.image_to_string(image)
-
-        else:
-            extracted_text = content.decode("utf-8", errors="ignore")
-
-        if not extracted_text.strip() or len(extracted_text) < 100:
-            raise HTTPException(
-                status_code=422,
-                detail="Could not extract sufficient text."
-            )
-
-        result = _engines["pre_purchase"].run(extracted_text)
-        return result.model_dump()
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        print("⚠️ /prepurchase/upload error:", e)
-        raise HTTPException(500, "File processing failed.")
-
-
-# --------------------------------------------------
-# Chat Session
+# Chat Session Management
 # --------------------------------------------------
 
 class CreateChatSessionRequest(BaseModel):

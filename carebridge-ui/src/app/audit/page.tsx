@@ -534,21 +534,17 @@ export default function AuditPage() {
         .conf-chip { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: .1em; text-transform: uppercase; padding: 4px 12px; border-radius: 2px; white-space: nowrap; }
 
         /* ── RESULTS LAYOUT ───────────────────────────── */
-.results-section {
-  max-width:1160px;
-  margin:28px auto 0;
-  padding:0 40px;
-  display:grid;
-  grid-template-columns: 1fr 320px; /* better balance */
-  gap:22px;
-  align-items:start;
-}
-        .results-main { display:flex;flex-direction:column;gap:14px; align-items:flex-start;   /*
+        .results-section {
+          max-width: 1160px; margin: 28px auto 0; padding: 0 40px 0;
+          display: grid; grid-template-columns: minmax(0,1fr) 288px;
+          gap: 24px; align-items: start;
+        }
+        .results-main { display: flex; flex-direction: column; gap: 14px; min-width: 0; overflow: hidden; }
         .results-side { display: flex; flex-direction: column; gap: 14px; width: 288px; position: sticky; top: 96px; }
 
         /* ── REPORT CARDS ─────────────────────────────── */
         .rcard { background: white; border: 1px solid #c8c2b4; border-radius: 4px; overflow: hidden; }
-        .rcard-hdr {
+        .rcard-hdr {  
           padding: 10px 22px; border-bottom: 1px solid #e8e3d8;
           display: flex; justify-content: space-between; align-items: center;
           background: #f5f0e8; flex-shrink: 0; min-height: 0;
