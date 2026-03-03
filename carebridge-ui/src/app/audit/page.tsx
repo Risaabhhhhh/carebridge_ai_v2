@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { analyzeRejection } from "../lib/api";
 import { AuditReport } from "../types/audit";
 import HelpSupport from "../components/audit/Helpsupport";
+import ReportVoiceChat from "../components/layout/ReportVoiceChat";
 
 /* ─────────────────────────────────────────────────────────────────
    COLOUR CONFIGS
@@ -877,6 +878,7 @@ export default function AuditPage() {
                       </div>
                     </div>
 
+
                     {/* Explicit disclaimer — always visible */}
                     <div className="appeal-disclaimer">
                       ⚠ Directional indicator only — not a legal prediction or probability of success.
@@ -911,6 +913,8 @@ export default function AuditPage() {
                     </div>
                   ))}
                 </div>
+
+
 
                 {/* DEEP ANALYSIS */}
                 <div className="rcard">
@@ -1002,6 +1006,12 @@ export default function AuditPage() {
                 </div>
 
                 <ReportChat report={report} />
+                <ReportVoiceChat
+                 reportData={report}
+                 sessionId={undefined}
+                 reportType="audit"
+                 className="h-140"
+/>
 
                 <div className="scard">
                   <div className="scard-label">Escalation path</div>

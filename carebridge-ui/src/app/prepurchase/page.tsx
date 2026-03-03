@@ -4,6 +4,7 @@ import { useState } from "react";
 import { analyzePolicy, analyzePolicyFromFile } from "../lib/api";
 import { PrePurchaseReport } from "../types/prepurchase";
 import ReportChat from "../components/layout/Reportchat";
+import ReportVoiceChat from "../components/layout/ReportVoiceChat";
 
 /* ── risk colour tokens ──────────────────────────────────────────── */
 const RISK: Record<string, { bg: string; color: string; border: string; dot: string }> = {
@@ -393,6 +394,7 @@ export default function PrePurchasePage() {
 
                 {/* AI CHAT — no cast needed, PrePurchaseReport is fully typed */}
                 <ReportChat reportData={report} context="prepurchase" />
+                <ReportVoiceChat reportData={report} sessionId={undefined} reportType="prepurchase" className="h-140" />
 
                 {/* POLICY ASSESSMENT CARD
                     Renamed from "Policy Score" — score ring kept (it's a

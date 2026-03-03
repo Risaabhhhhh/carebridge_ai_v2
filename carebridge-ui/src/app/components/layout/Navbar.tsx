@@ -7,8 +7,9 @@ const NAV_ITEMS = [
   { name: "Analyze Policy",   href: "/prepurchase" },
   { name: "Audit Rejection",  href: "/audit" },
   { name: "Compare Policies", href: "/compare" },
-  {name : "learn", href: "/learn"},
   { name: "Get Help",         href: "/support" },
+  { name: "INSUREIQ",          href: "/insureiq" },
+  {name : "learn", href: "/learn"},
 ];
 
 export default function Navbar() {

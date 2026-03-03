@@ -1,11 +1,16 @@
 # services/report_chat_service.py
+#
+# Multilingual-aware report chat service.
+# lang param ("en", "hi", "mr", "ta") threads through prompt + fallback.
 
 from llm.generation import generate
-from llm.prompts import report_chat_prompt
+from llm.report_chat_prompt import report_chat_prompt
+from llm.multilingual_translations import t, SPEECH_LANG_CODES
 from schemas.chat import ReportChatResponse
 from services.chat_memory import get_session, add_message, get_history, get_report_data
 
 _MAX_HISTORY_TURNS = 6
+_SUPPORTED_LANGS   = set(SPEECH_LANG_CODES.keys())
 
 
 def run_report_chat(
@@ -14,66 +19,67 @@ def run_report_chat(
     user_question: str,
     session_id: str | None = None,
     report_data: dict | None = None,
+    lang: str = "en",
 ) -> ReportChatResponse:
     """
-    One-shot  (/report-chat): pass report_data + user_question
-    Session   (/chat):        pass session_id + user_question
+    One-shot  (/report-chat): pass report_data + user_question + lang
+    Session   (/chat):        pass session_id + user_question + lang
 
-    Session-based path maintains full conversation history for multi-turn Q&A.
-    One-shot path uses only the report data — no memory between calls.
+    lang: "en" | "hi" | "mr" | "ta"  (falls back to "en" if unsupported)
     """
 
-    # ── Resolve report data and history ──────────────────────
+    lang = lang if lang in _SUPPORTED_LANGS else "en"
+
+    # ── Resolve report data and history ──────────────────────────────────────
     if session_id:
         session = get_session(session_id)
         if not session:
             return ReportChatResponse(
-                answer="Session not found or expired. Please start a new chat.",
+                answer=_session_not_found_msg(lang),
             )
         report_data = get_report_data(session_id)
         history     = get_history(session_id, max_turns=_MAX_HISTORY_TURNS)
     else:
         if not report_data:
-            return ReportChatResponse(answer="No report data provided.")
+            return ReportChatResponse(answer=_no_report_msg(lang))
         history = []
 
     if not report_data:
-        return ReportChatResponse(answer="Report data unavailable for this session.")
+        return ReportChatResponse(answer=_no_report_msg(lang))
 
-    # ── Build prompt with full context ────────────────────────
-    prompt = report_chat_prompt(report_data, history, user_question)
+    # ── Build multilingual prompt ─────────────────────────────────────────────
+    prompt = report_chat_prompt(report_data, history, user_question, lang=lang)
 
-    # ── Generate ──────────────────────────────────────────────
+    # ── Generate ──────────────────────────────────────────────────────────────
     raw = generate(
         prompt,
         model,
         tokenizer,
-        max_new_tokens=450,     # 3-5 sentences needs more room than 400
+        max_new_tokens=450,
         json_mode=False,
-        temperature=0.35,       # slight creativity for natural answers
+        temperature=0.35,
     )
 
     answer = raw.strip() if raw and raw.strip() else ""
 
-    # Strip any accidental "Answer:" or "ANSWER:" prefix the model adds
-    for prefix in ("Answer:", "ANSWER:", "Assistant:", "ASSISTANT:"):
+    # Strip model prefix artifacts
+    for prefix in ("Answer:", "ANSWER:", "Assistant:", "ASSISTANT:", "ANSWER:\n"):
         if answer.startswith(prefix):
             answer = answer[len(prefix):].strip()
             break
 
-    # Strip any trailing prompt echo (model sometimes repeats the last prompt line)
-    cutoff_markers = ["USER QUESTION:", "CONVERSATION HISTORY:", "REPORT TYPE:"]
-    for marker in cutoff_markers:
+    # Strip any prompt echo
+    for marker in ("USER QUESTION:", "CONVERSATION HISTORY:", "REPORT TYPE:", "REPORT DATA:"):
         idx = answer.find(marker)
-        if idx > 20:   # only cut if there's actual content before the echo
+        if idx > 20:
             answer = answer[:idx].strip()
 
-    # ── Fallback if LLM returned nothing meaningful ───────────
+    # ── Fallback if LLM returned nothing ─────────────────────────────────────
     if len(answer) < 15:
-        print(f"⚠ LLM answer too short ({len(answer)} chars) — using deterministic fallback")
-        answer = _build_fallback_answer(user_question, report_data)
+        print(f"⚠ LLM answer too short ({len(answer)}) — deterministic fallback")
+        answer = _build_fallback_answer(user_question, report_data, lang)
 
-    # ── Persist to session ────────────────────────────────────
+    # ── Persist to session ────────────────────────────────────────────────────
     if session_id:
         add_message(session_id, "user",      user_question)
         add_message(session_id, "assistant", answer)
@@ -87,69 +93,86 @@ def run_report_chat(
     )
 
 
-def _build_fallback_answer(question: str, report: dict) -> str:
+# ══════════════════════════════════════════════════════════════════════════════
+# MULTILINGUAL FALLBACK ANSWERS
+# ══════════════════════════════════════════════════════════════════════════════
+
+def _build_fallback_answer(question: str, report: dict, lang: str = "en") -> str:
     """
-    Context-aware fallback that always returns something useful.
-    Detects whether this is a prepurchase or audit report from structure.
+    Context-aware multilingual fallback.
+    Detects report type from structure, then matches intent from question keywords.
+    All strings come from multilingual_translations.t().
     """
     q = question.lower()
     is_prepurchase = "clause_risk" in report and "appeal_strength" not in report
 
     if is_prepurchase:
-        score    = report.get("score_breakdown", {}).get("adjusted_score", 0)
-        rating   = report.get("overall_policy_rating", "Unknown")
-        risk     = report.get("clause_risk", {})
-        high     = [k.replace("_"," ") for k, v in risk.items() if v == "High Risk"]
-        mod      = [k.replace("_"," ") for k, v in risk.items() if v == "Moderate Risk"]
-        comply   = report.get("irdai_compliance", {}).get("compliance_rating", "Unknown")
-        broker   = report.get("broker_risk_analysis", {}).get("structural_risk_level", "Unknown")
-        checklist = report.get("checklist_for_buyer", [])
+        return _prepurchase_fallback(q, report, lang)
+    else:
+        return _audit_fallback(q, report, lang)
 
-        if any(k in q for k in ["risk", "biggest", "danger", "concern", "worst"]):
-            if not high:
-                return f"No clauses were rated High Risk. Moderate risk areas include: {', '.join(mod[:3]) or 'none detected'}. Overall score: {round(score)}/100 ({rating})."
-            return f"The highest-risk clauses are: {', '.join(high[:4])}. These directly reduce your effective coverage. Overall policy score: {round(score)}/100 ({rating}). IRDAI Compliance: {comply}."
 
-        if any(k in q for k in ["waiting", "wait"]):
-            wv = risk.get("waiting_period", "Not Found")
-            msgs = {
-                "High Risk": "This policy has a long waiting period (3+ years). You cannot claim for pre-existing conditions during this period.",
-                "Moderate Risk": "The waiting period is Moderate Risk (1–3 years). Confirm the exact duration before signing.",
-                "Low Risk": "The waiting period appears short — a positive indicator. Verify the exact clause.",
-                "Not Found": "Waiting period was not detectable. Ask the insurer: how many months until pre-existing conditions are covered?",
-            }
-            return msgs.get(wv, "Could not determine the waiting period risk.")
+def _prepurchase_fallback(q: str, report: dict, lang: str) -> str:
+    score   = round(float(report.get("score_breakdown", {}).get("adjusted_score", 0)))
+    rating  = report.get("overall_policy_rating", "Unknown")
+    risk    = report.get("clause_risk", {})
+    high    = [k.replace("_", " ") for k, v in risk.items() if v == "High Risk"]
+    mod     = [k.replace("_", " ") for k, v in risk.items() if v == "Moderate Risk"]
+    comply  = report.get("irdai_compliance", {}).get("compliance_rating", "Unknown")
+    broker  = report.get("broker_risk_analysis", {}).get("structural_risk_level", "Unknown")
+    checklist = report.get("checklist_for_buyer", [])
 
-        if any(k in q for k in ["compliance", "irdai", "regulatory"]):
-            return f"IRDAI compliance is rated {comply}. This reflects key consumer protections: free-look period, grievance redressal, and claim timelines. Structural risk: {broker}."
+    if any(k in q for k in ["risk", "biggest", "danger", "concern", "worst",
+                              "jokhim", "khatre", "aapad", "aapatti"]):
+        if not high:
+            return t("no_high_risk", lang, mod=", ".join(mod[:3]) or "none", score=score, rating=rating)
+        return t("risk", lang, high=", ".join(high[:4]), score=score, rating=rating, comply=comply)
 
-        if any(k in q for k in ["buy", "should i", "recommend", "decision"]):
-            if score >= 80: rec = "This policy scores well and appears consumer-friendly."
-            elif score >= 55: rec = "Moderate score. Clarify the flagged High Risk clauses before signing."
-            else: rec = "Low score. Consider comparing alternatives or negotiating clause amendments."
-            return f"Policy Score: {round(score)}/100 ({rating}). Structural Risk: {broker}. {rec}"
+    if any(k in q for k in ["wait", "waiting", "prateeksha", "prateekshe", "kaththiruppu"]):
+        wv = risk.get("waiting_period", "Not Found")
+        key_map = {
+            "High Risk":     "waiting_high",
+            "Moderate Risk": "waiting_moderate",
+            "Low Risk":      "waiting_low",
+            "Not Found":     "waiting_not_found",
+        }
+        return t(key_map.get(wv, "waiting_not_found"), lang)
 
-        if any(k in q for k in ["negotiate", "before buying", "which clause", "ask"]):
-            if not high:
-                return "No High Risk clauses detected. Still ask the insurer to clarify exclusions and confirm there are no hidden sub-limits."
-            return f"Before buying, get written clarification on: {', '.join(high[:3])}. Also ask for the insurer's claim settlement ratio and exact waiting period duration."
+    if any(k in q for k in ["compliance", "irdai", "regulatory", "niyamak"]):
+        return t("compliance", lang, comply=comply, broker=broker)
 
-        if any(k in q for k in ["not found", "missing", "detected"]):
-            missing = [k.replace("_"," ") for k, v in risk.items() if v == "Not Found"]
-            if not missing:
-                return "All 10 clauses were detected in the policy text."
-            return f"These clauses were not detectable: {', '.join(missing)}. This may mean the text provided was a summary — upload the full policy or ask the insurer directly."
+    if any(k in q for k in ["buy", "should i", "recommend", "kharidun", "kharedi",
+                              "purchase", "lo", "lena"]):
+        key = "buy_strong" if score >= 72 else "buy_moderate" if score >= 48 else "buy_weak"
+        return t(key, lang, score=score, rating=rating, broker=broker)
 
-        if checklist:
-            return f"Key pre-purchase questions: {' | '.join(checklist[:3])}. Score: {round(score)}/100 ({rating})."
+    if any(k in q for k in ["negotiate", "before buying", "which clause", "ask",
+                              "pucho", "vicharaa", "kaanal"]):
+        if not high:
+            return t("negotiate_none", lang)
+        return t("negotiate_high", lang, high=", ".join(high[:3]))
 
-        return f"Policy Score: {round(score)}/100 ({rating}). High Risk clauses: {', '.join(high) or 'none'}. IRDAI Compliance: {comply}. Structural Risk: {broker}."
+    if any(k in q for k in ["not found", "missing", "detected", "nahi mila",
+                              "aadhalit nahi", "kandu aale nahi"]):
+        missing = [k.replace("_", " ") for k, v in risk.items() if v == "Not Found"]
+        if not missing:
+            return t("all_found", lang)
+        return t("not_found_missing", lang, missing=", ".join(missing))
 
-    # ── Audit fallback ────────────────────────────────────────
+    if checklist:
+        checklist_preview = " | ".join(checklist[:3])
+        return t("generic", lang, score=score, rating=rating,
+                 high=", ".join(high) or "none", comply=comply, broker=broker)
+
+    return t("generic", lang, score=score, rating=rating,
+             high=", ".join(high) or "none", comply=comply, broker=broker)
+
+
+def _audit_fallback(q: str, report: dict, lang: str) -> str:
     appeal    = report.get("appeal_strength", {})
     pct       = appeal.get("percentage", 0)
-    lbl       = appeal.get("label", "Unknown")
-    rsn       = appeal.get("reasoning", "")
+    label     = appeal.get("label", "Unknown")
+    reasoning = appeal.get("reasoning", "")
     why       = report.get("why_rejected", "not specified")
     clause    = report.get("policy_clause_detected", "not identified")
     alignment = report.get("clause_alignment", "Unknown")
@@ -157,75 +180,88 @@ def _build_fallback_answer(question: str, report: dict) -> str:
     strong    = report.get("strong_points", [])
     steps     = report.get("reapplication_steps", [])
 
-    if any(k in q for k in ["strong", "chance", "appeal case", "how strong"]):
-        extra = ("Strong position — challenge formally." if pct >= 70 else
-                 "Worth pursuing — address the evidence gaps first." if pct >= 40 else
-                 "Difficult case — focus on the moratorium rule if policy is 8+ years old.")
-        return f"Appeal rated {lbl} at {pct}%. {rsn} {extra}"
+    if any(k in q for k in ["strong", "chance", "appeal", "how strong",
+                              "kitni", "appeal karo", "mazbut", "mazboot"]):
+        key = "appeal_strong" if pct >= 70 else "appeal_moderate" if pct >= 40 else "appeal_weak"
+        return t(key, lang, label=label, pct=pct, reasoning=reasoning)
 
-    if any(k in q for k in ["overturn", "evidence", "what could", "reverse"]):
+    if any(k in q for k in ["overturn", "evidence", "reverse", "palat",
+                              "badal", "cancel"]):
         wk = "; ".join(weak[:2]) or "documentation gaps"
-        return (f"To overturn: address {wk}. Get a physician's letter confirming exact diagnosis date, "
-                f"gather records showing when the condition first manifested, and cross-reference the rejection "
-                f"clause against IRDAI's standardised exclusion definitions. "
-                f"If the policy is 8+ years old, invoke the IRDAI moratorium — pre-existing exclusions cannot apply.")
+        return t("overturn", lang, weak=wk)
 
-    if any(k in q for k in ["moratorium", "8 year", "8-year"]):
-        return ("The IRDAI 8-year moratorium: after 8 continuous years on any health policy, "
-                "the insurer cannot reject citing pre-existing disease — even if not disclosed at inception. "
-                "If your policy (or ported predecessor) is 8+ years old, this is your strongest legal argument.")
+    if any(k in q for k in ["moratorium", "8 year", "8-year", "8 saal",
+                              "moratorium niyam"]):
+        return t("moratorium", lang)
 
-    if any(k in q for k in ["next step", "what should", "what do i", "how do i"]):
+    if any(k in q for k in ["next step", "what should", "kya karu", "pudhe",
+                              "aata", "enna seiya"]):
         if steps:
-            s = " ".join(f"{i+1}. {t}" for i, t in enumerate(steps[:3]))
-            return f"{s} File with IRDAI IGMS if no response in 15 days. Approach Ombudsman within 1 year."
-        return ("1. File written complaint with insurer GRO. "
-                "2. Escalate to IRDAI IGMS (igms.irda.gov.in) if no response in 15 days. "
-                "3. Approach Insurance Ombudsman (cioins.co.in) within 1 year of final reply.")
+            steps_str = " ".join(f"{i+1}. {s}" for i, s in enumerate(steps[:3]))
+            return t("next_steps_dynamic", lang, steps=steps_str)
+        return t("next_steps_generic", lang)
 
-    if any(k in q for k in ["ombudsman", "escalat", "complain", "igms"]):
-        return ("File with IRDAI IGMS first. If unresolved in 30 days, approach the Insurance Ombudsman. "
-                "Eligibility: claims up to ₹50 lakhs, within 1 year of the insurer's final reply. Free and binding.")
+    if any(k in q for k in ["ombudsman", "escalat", "complain", "igms",
+                              "shikayat", "takraar"]):
+        return t("ombudsman", lang)
 
-    if any(k in q for k in ["document", "need", "bring", "submit"]):
-        return ("For appeal: (1) full policy document, (2) original rejection letter, "
-                "(3) all medical records submitted with claim, (4) hospital discharge summary and bills, "
-                "(5) doctor's certificate with exact diagnosis date, (6) prior insurer correspondence.")
+    if any(k in q for k in ["document", "need", "bring", "submit", "dastavez",
+                              "kagaz", "aavashyak"]):
+        return t("documents", lang)
 
-    if any(k in q for k in ["clause", "exclusion", "why", "what clause"]):
+    if any(k in q for k in ["clause", "exclusion", "why", "kyon", "kyun",
+                              "kaaran", "kaarana"]):
         challengeable = alignment in ("Weak", "Not Detected")
-        return (f'Clause applied: "{clause}". Rejection basis: "{why}". '
-                f"Alignment: {alignment}. "
-                f"{'This is potentially challengeable — the insurer application appears weak.' if challengeable else 'The insurer has a policy basis, but you can still contest the interpretation.'}")
+        key = "clause_challengeable" if challengeable else "clause_firm"
+        return t(key, lang, clause=clause, why=why, alignment=alignment)
 
     st = "; ".join(strong[:2]) or "none identified"
     wk = "; ".join(weak[:2]) or "none identified"
-    return (f'Rejection: "{why}". Clause: "{clause}" ({alignment} alignment). '
-            f"Appeal: {lbl} ({pct}%). Strong: {st}. Challenges: {wk}.")
+    return t("generic", lang, why=why, clause=clause, alignment=alignment,
+             label=label, pct=pct, strong=st, weak=wk)
+
+
+# ── System messages ───────────────────────────────────────────────────────────
+
+def _session_not_found_msg(lang: str) -> str:
+    msgs = {
+        "en": "Session not found or expired. Please start a new chat.",
+        "hi": "सत्र नहीं मिला या समाप्त हो गया। कृपया नई चैट शुरू करें।",
+        "mr": "सत्र सापडले नाही किंवा कालबाह्य झाले. कृपया नवीन चॅट सुरू करा.",
+        "ta": "அமர்வு கண்டறியப்படவில்லை அல்லது காலாவதியானது. புதிய அரட்டையை தொடங்கவும்.",
+    }
+    return msgs.get(lang, msgs["en"])
+
+
+def _no_report_msg(lang: str) -> str:
+    msgs = {
+        "en": "No report data provided.",
+        "hi": "कोई रिपोर्ट डेटा प्रदान नहीं किया गया।",
+        "mr": "कोणताही अहवाल डेटा प्रदान केला नाही.",
+        "ta": "எந்த அறிக்கை தரவும் வழங்கப்படவில்லை.",
+    }
+    return msgs.get(lang, msgs["en"])
 
 
 def _extract_sources(text: str, report_data: dict) -> list[str]:
-    """Extract IRDAI regulatory references from the answer text."""
-    refs = []
-    text_lower = text.lower()
-
+    """Extract IRDAI regulatory references mentioned in the answer."""
+    refs   = []
+    lower  = text.lower()
     checks = [
-        ("moratorium",       "IRDAI 8-Year Moratorium Rule"),
-        ("irdai",            "IRDAI Policyholders' Protection Regulations 2017"),
-        ("ombudsman",        "Insurance Ombudsman Rules 2017"),
-        ("free look",        "IRDAI Free Look Period Mandate"),
-        ("waiting period",   "IRDAI Waiting Period Regulations"),
-        ("pre-existing",     "IRDAI Pre-existing Disease Definition"),
-        ("consumer protect", "Consumer Protection Act 2019"),
-        ("igms",             "IRDAI IGMS Grievance Portal"),
-        ("copay",            "IRDAI Co-payment Regulation"),
-        ("restoration",      "IRDAI Sum Insured Restoration Guidelines"),
+        ("moratorium",     "IRDAI 8-Year Moratorium Rule"),
+        ("irdai",          "IRDAI Policyholders' Protection Regulations 2017"),
+        ("ombudsman",      "Insurance Ombudsman Rules 2017"),
+        ("free look",      "IRDAI Free Look Period Mandate"),
+        ("waiting period", "IRDAI Waiting Period Regulations"),
+        ("pre-existing",   "IRDAI Pre-existing Disease Definition"),
+        ("igms",           "IRDAI IGMS Grievance Portal"),
+        ("co-pay",         "IRDAI Co-payment Regulation"),
+        ("restoration",    "IRDAI Sum Insured Restoration Guidelines"),
+        ("consumer",       "Consumer Protection Act 2019"),
     ]
-
     for keyword, label in checks:
-        if keyword in text_lower and label not in refs:
+        if keyword in lower and label not in refs:
             refs.append(label)
         if len(refs) >= 3:
             break
-
     return refs
