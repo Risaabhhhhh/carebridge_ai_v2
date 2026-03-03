@@ -148,7 +148,7 @@ class PrePurchaseEngine:
         # 🔒 CLEAN INPUT
         # ─────────────────────────────────────────────────────
         policy_text = re.sub(r"\s+", " ", policy_text).strip()
-        policy_text = policy_text[:3000]
+        policy_text = policy_text[:1200]
 
         # ─────────────────────────────────────────────────────
         # 1️⃣ Deterministic Feature Extraction

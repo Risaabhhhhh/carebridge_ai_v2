@@ -8,7 +8,7 @@ def generate(
     prompt: str,
     model,
     tokenizer,
-    max_new_tokens: int = 200,
+    max_new_tokens: int = 150,
     json_mode: bool = False,
     timeout: int = 300,
     temperature: float = 0.0,
