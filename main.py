@@ -277,6 +277,135 @@ def report_chat(request: ReportChatRequest):
         raise HTTPException(500, "Chat service error.")
 
 
+        # main.py — add this after /report-chat
+
+class LearnRequest(BaseModel):
+    question: str
+    lang:     str = "en"
+
+@app.post("/learn")
+def learn(request: LearnRequest):
+    """
+    Standalone educational chatbot — no report context needed.
+    Answers general insurance literacy questions in any supported language.
+    """
+    try:
+        from llm.report_chat_prompt import learn_prompt
+
+        prompt = learn_prompt(request.question, lang=request.lang)
+        raw = generate(
+            prompt,
+            _engines["model"],
+            _engines["tokenizer"],
+            max_new_tokens=400,
+            json_mode=False,
+            temperature=0.4,
+        )
+        answer = raw.strip() if raw else ""
+
+        # Fallback if LLM empty
+        if len(answer) < 8:
+            answer = _learn_fallback(request.question, request.lang)
+
+        sources = _learn_sources(request.question)
+        return {"answer": answer, "sources": sources}
+
+    except Exception as e:
+        print("⚠️ /learn error:", e)
+        raise HTTPException(500, "Learn service error.")
+
+
+def _learn_fallback(question: str, lang: str) -> str:
+    """Static answers for common insurance literacy questions."""
+    q = question.lower()
+    fallbacks = {
+        "en": {
+            "waiting period": (
+                "A waiting period is a time window after buying insurance during "
+                "which certain claims are not covered. Standard: 30 days for most "
+                "illnesses. Pre-existing disease waiting period: up to 48 months "
+                "(IRDAI maximum). Specific diseases like hernia, cataract: "
+                "typically 1–2 years. Accidents are always covered immediately."
+            ),
+            "pre-existing": (
+                "A pre-existing disease is any condition you had before buying "
+                "the policy — whether diagnosed or showing symptoms. Under IRDAI "
+                "rules, insurers can exclude it for up to 48 months. After the "
+                "8-year moratorium, no claim can be rejected for pre-existing "
+                "disease even if undisclosed."
+            ),
+            "co-payment": (
+                "Co-payment means you pay a fixed percentage of every claim, "
+                "and insurance covers the rest. Example: 20% co-pay on a "
+                "₹5 lakh claim means you pay ₹1 lakh, insurer pays ₹4 lakh. "
+                "Senior citizen policies often have higher co-pay. "
+                "Avoid high co-pay policies if possible."
+            ),
+            "sum insured": (
+                "Sum insured is the maximum amount your insurer will pay in a "
+                "policy year. Example: ₹5 lakh sum insured means total claims "
+                "in one year cannot exceed ₹5 lakhs. Choose based on your city "
+                "— metro city hospital costs are 2–3x higher than tier-2 cities."
+            ),
+            "room rent": (
+                "Room rent sublimit caps how much the insurer pays per day for "
+                "your hospital room. Example: 1% of sum insured on a ₹5 lakh "
+                "policy = ₹5,000/day cap. If you stay in a ₹10,000/day room, "
+                "the insurer applies proportionate deduction — your entire bill "
+                "gets reduced by 50%, not just the room cost."
+            ),
+        },
+        "hi": {
+            "waiting period": (
+                "Waiting period wo samay hai jab aap policy kharidne ke baad "
+                "kuch bimariyon ka claim nahi kar sakte. Aam bimariyon ke liye: "
+                "30 din. Pre-existing disease ke liye: 48 mahine tak (IRDAI "
+                "maximum). Accident hamesha turant cover hota hai."
+            ),
+            "pre-existing": (
+                "Pre-existing disease wo bimari hai jo policy kharidne se pehle "
+                "thi. IRDAI ke niyam ke anusaar insurer 48 mahine tak ise cover "
+                "nahi kar sakta. 8 saal baad koi bhi rejection pre-existing ke "
+                "naam par nahi ho sakta."
+            ),
+            "co-payment": (
+                "Co-payment matlab aap har claim ka ek fixed percentage khud "
+                "bharte hain. Example: 20% co-pay par ₹5 lakh claim mein "
+                "aap ₹1 lakh denge, insurer ₹4 lakh dega. Senior citizen "
+                "policies mein zyada co-pay hota hai."
+            ),
+        },
+    }
+
+    lang_data = fallbacks.get(lang, fallbacks["en"])
+    for keyword, answer in lang_data.items():
+        if keyword in q:
+            return answer
+
+    # Ultimate generic fallback
+    generic = {
+        "en": "I can explain insurance concepts like waiting period, pre-existing disease, co-payment, sum insured, room rent sublimit, and your IRDAI rights. What would you like to know?",
+        "hi": "Mein insurance concepts jaise waiting period, pre-existing disease, co-payment, sum insured, aur aapke IRDAI rights explain kar sakta hun. Kya jaanna chahte hain?",
+        "mr": "Mee waiting period, pre-existing disease, co-payment, sum insured ani IRDAI hakka yavishayi saangoo shakto. Kaay saangaychay?",
+        "ta": "Naan waiting period, pre-existing disease, co-payment, sum insured matrum IRDAI urimai patrri viLakkam tharava mudiyum. Enna theriya vendum?",
+    }
+    return generic.get(lang, generic["en"])
+
+
+def _learn_sources(question: str) -> list[str]:
+    q = question.lower()
+    sources = []
+    if any(k in q for k in ["pre-existing", "waiting", "moratorium"]):
+        sources.append("IRDAI Health Insurance Regulations 2016")
+    if any(k in q for k in ["ombudsman", "complaint", "grievance"]):
+        sources.append("Insurance Ombudsman Rules 2017")
+    if any(k in q for k in ["right", "protection", "policyholder"]):
+        sources.append("IRDAI Policyholders' Protection Regulations 2017")
+    if any(k in q for k in ["consumer", "court", "forum"]):
+        sources.append("Consumer Protection Act 2019")
+    return sources[:2]
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 # CHAT SESSION — persistent multi-turn
 # ══════════════════════════════════════════════════════════════════════════════

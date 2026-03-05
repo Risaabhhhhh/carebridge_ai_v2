@@ -265,3 +265,51 @@ def _extract_sources(text: str, report_data: dict) -> list[str]:
         if len(refs) >= 3:
             break
     return refs
+
+    # ── NEW: Escalation intents ───────────────────────────────────────────────────
+_INTENT_ESCALATION = {
+    # English
+    "escalate", "gro", "complain", "complaint", "grievance", "portal",
+    "igms", "next level", "not resolved", "what after", "after ombudsman",
+    "consumer court", "legal action",
+    # Hindi
+    "shikayat kahan", "aage kya", "gro ko", "portal pe", "court mein",
+    "consumer forum", "escalate karo", "kahan jaun", "kahan jaye",
+    # Marathi
+    "tक्रार kुठे", "pudhe kaaय", "gro la", "court la",
+    # Tamil
+    "yaarel solluvadhu", "menaley", "gro kitta", "court la",
+}
+
+# ── NEW: Legal aid intents ────────────────────────────────────────────────────
+_INTENT_LEGAL = {
+    # English
+    "lawyer", "advocate", "legal", "nalsa", "free legal", "legal aid",
+    "can't afford lawyer", "no money", "free help", "legal support",
+    "slsa", "state legal",
+    # Hindi
+    "vakeel", "vakil", "muft madad", "free madad", "nalsa", "legal sahayata",
+    "paisa nahi", "afford nahi", "muft vakeel", "kanoon madad",
+    # Marathi
+    "vakeel", "muft madad", "nalsa", "legal sahayya", "paisa nahi",
+    # Tamil
+    "vakeel", "illada udavi", "nalsa", "legal udavi", "panam illai",
+}
+
+# ── NEW: Financial / NGO support intents ─────────────────────────────────────
+_INTENT_FINANCIAL = {
+    # English
+    "ngo", "financial help", "money", "fund", "ayushman", "pmjay",
+    "treatment cost", "can't afford", "afford treatment", "help pay",
+    "crowdfund", "impactguru", "hospital bill", "scheme", "government scheme",
+    # Hindi
+    "paisa chahiye", "madad chahiye", "ngo", "ayushman bharat",
+    "treatment ka paisa", "hospital bill", "scheme", "sarkari madad",
+    "fund chahiye", "afford nahi kar sakta", "financial madad",
+    # Marathi
+    "paisa pahije", "madad pahije", "ngo", "ayushman", "scheme",
+    "treatment cha paisa", "sarkari madad",
+    # Tamil
+    "panam venum", "udavi venum", "ngo", "ayushman", "scheme",
+    "treatment panam", "arasaangam",
+}

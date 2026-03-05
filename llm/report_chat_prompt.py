@@ -59,7 +59,7 @@ BUYER CHECKLIST:
 {_format_list(report_data.get('checklist_for_buyer', []))}"""
 
     else:
-        report_type = "CLAIM REJECTION AUDIT"
+        report_type = "CLAIM REJECTION "
         appeal = report_data.get("appeal_strength", {})
         report_summary = f"""
 CASE SUMMARY: {report_data.get('case_summary', 'N/A')}
@@ -104,6 +104,28 @@ USER QUESTION: {user_question}
 
 ANSWER:"""
 
+def learn_prompt(question: str, lang: str = "en") -> str:
+    lang_instruction = {
+        "en": "Respond in English.",
+        "hi": "Hindi mein jawab dein. Simple bhasha use karein.",
+        "mr": "Marathi madhye uttar dya. Saral bhasha vapara.",
+        "ta": "Tamil il padhil solunga. Saral mozhi upayogippadu.",
+    }.get(lang, "Respond in English.")
+
+    return f"""<start_of_turn>system
+You are an insurance education assistant for Indian policyholders.
+Your job is to explain insurance concepts in simple, jargon-free language.
+Always use Indian examples (rupees, IRDAI rules, Indian hospitals).
+Be concise — 3 to 5 sentences maximum.
+If relevant, cite the specific IRDAI regulation.
+{lang_instruction}
+<end_of_turn>
+<start_of_turn>user
+{question}
+<end_of_turn>
+<start_of_turn>model
+"""
+
 
 def _format_dict(d: dict) -> str:
     if not d:
@@ -115,3 +137,5 @@ def _format_list(lst: list) -> str:
     if not lst:
         return "  None"
     return "\n".join(f"  {i+1}. {item}" for i, item in enumerate(lst))
+
+    

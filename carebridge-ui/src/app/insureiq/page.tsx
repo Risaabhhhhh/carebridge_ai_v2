@@ -1,6 +1,54 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
+
+/* ══════════════════════════════════════════════════════════════
+   SPEECH RECOGNITION TYPE AUGMENTATION
+══════════════════════════════════════════════════════════════ */
+interface SpeechRecognitionResultItem {
+  transcript: string;
+  confidence: number;
+}
+
+interface SpeechRecognitionResult {
+  readonly length: number;
+  readonly isFinal: boolean;
+  item(index: number): SpeechRecognitionResultItem;
+  [index: number]: SpeechRecognitionResultItem;
+}
+
+interface SpeechRecognitionResultList {
+  readonly length: number;
+  item(index: number): SpeechRecognitionResult;
+  [index: number]: SpeechRecognitionResult;
+}
+
+interface SpeechRecognitionEvent extends Event {
+  readonly resultIndex: number;
+  readonly results: SpeechRecognitionResultList;
+}
+
+interface SpeechRecognitionInstance extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onresult: ((event: SpeechRecognitionEvent) => void) | null;
+  onend: (() => void) | null;
+  onerror: (() => void) | null;
+  start(): void;
+  stop(): void;
+}
+
+interface SpeechRecognitionConstructor {
+  new (): SpeechRecognitionInstance;
+}
+
+declare global {
+  interface Window {
+    SpeechRecognition: SpeechRecognitionConstructor | undefined;
+    webkitSpeechRecognition: SpeechRecognitionConstructor | undefined;
+  }
+}
 
 /* ══════════════════════════════════════════════════════════════
    TYPES
@@ -11,8 +59,8 @@ interface QuizQuestion { question: string; options: string[]; correct: number; e
 interface Lesson {
   id: string; title: string; duration: string;
   summary: string;
-  content: string[];          // paragraphs
-  videoId: string;            // YouTube video ID
+  content: string[];
+  videoId: string;
   videoTitle: string;
   quiz: QuizQuestion[];
 }
@@ -22,15 +70,8 @@ interface Module {
 }
 type View = "home" | "module" | "lesson" | "quiz" | "quiz-result";
 
-declare global {
-  interface Window {
-    SpeechRecognition: typeof SpeechRecognition;
-    webkitSpeechRecognition: typeof SpeechRecognition;
-  }
-}
-
 /* ══════════════════════════════════════════════════════════════
-   DESIGN TOKENS  (CareBridge palette)
+   DESIGN TOKENS
 ══════════════════════════════════════════════════════════════ */
 const T = {
   cream:"#F5F0E8", creamDim:"#EDE8DC", creamBdr:"#D9D3C5",
@@ -295,7 +336,7 @@ Rules:
 /* ══════════════════════════════════════════════════════════════
    HELPER: MARKDOWN RENDER
 ══════════════════════════════════════════════════════════════ */
-function Md({ text }: { text: string }): JSX.Element {
+function Md({ text }: { text: string }): React.ReactElement {
   return (
     <>
       {text.split("\n").map((line, i) => {
@@ -317,35 +358,37 @@ function Md({ text }: { text: string }): JSX.Element {
 /* ══════════════════════════════════════════════════════════════
    MAIN COMPONENT
 ══════════════════════════════════════════════════════════════ */
-export default function LearnPage(): JSX.Element {
+export default function LearnPage(): React.ReactElement {
   // Navigation state
-  const [view, setView]             = useState<View>("home");
-  const [activeModule, setActiveMod] = useState<Module | null>(null);
-  const [activeLesson, setActiveLes] = useState<Lesson | null>(null);
+  const [view, setView]               = useState<View>("home");
+  const [activeModule, setActiveMod]  = useState<Module | null>(null);
+  const [activeLesson, setActiveLes]  = useState<Lesson | null>(null);
 
   // Progress (persisted)
-  const [completed, setCompleted]   = useState<Set<string>>(new Set());
-  const [quizScores, setQuizScores] = useState<Record<string, number>>({});
+  const [completed, setCompleted]     = useState<Set<string>>(new Set());
+  const [quizScores, setQuizScores]   = useState<Record<string, number>>({});
 
   // Quiz state
   const [quizAnswers, setQuizAnswers] = useState<(number | null)[]>([]);
   const [quizSubmitted, setQuizSub]   = useState<boolean>(false);
 
   // Chat state
-  const [messages, setMessages]     = useState<Message[]>([]);
-  const [chatInput, setChatInput]   = useState<string>("");
-  const [chatLoading, setChatLoad]  = useState<boolean>(false);
-  const [chatOpen, setChatOpen]     = useState<boolean>(false);
+  const [messages, setMessages]       = useState<Message[]>([]);
+  const [chatInput, setChatInput]     = useState<string>("");
+  const [chatLoading, setChatLoad]    = useState<boolean>(false);
 
   // Voice
-  const [lang, setLang]             = useState<Lang>(LANGS[0]);
-  const [listening, setListening]   = useState<boolean>(false);
-  const [speaking, setSpeaking]     = useState<boolean>(false);
-  const [voiceOn, setVoiceOn]       = useState<boolean>(false);
-  const [transcript, setTx]         = useState<string>("");
+  const [lang, setLang]               = useState<Lang>(LANGS[0]);
+  const [listening, setListening]     = useState<boolean>(false);
+  const [speaking, setSpeaking]       = useState<boolean>(false);
+  const [voiceOn, setVoiceOn]         = useState<boolean>(false);
+  const [transcript, setTx]           = useState<string>("");
 
   const endRef   = useRef<HTMLDivElement>(null);
-  const recogRef = useRef<InstanceType<typeof SpeechRecognition> | null>(null);
+  const recogRef = useRef<SpeechRecognitionInstance | null>(null);
+
+  // Suppress unused warning for quizSubmitted
+  void quizSubmitted;
 
   // Load progress from localStorage
   useEffect(() => {
@@ -371,11 +414,15 @@ export default function LearnPage(): JSX.Element {
 
   // Speech recognition — rebuild when lang changes
   useEffect(() => {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const SR: SpeechRecognitionConstructor | undefined =
+      window.SpeechRecognition ?? window.webkitSpeechRecognition;
     if (!SR) return;
-    const r = new SR();
-    r.continuous = false; r.interimResults = true;
+
+    const r: SpeechRecognitionInstance = new SR();
+    r.continuous = false;
+    r.interimResults = true;
     r.lang = lang.voiceLang;
+
     r.onresult = (e: SpeechRecognitionEvent) => {
       let interim = "", final = "";
       for (let i = e.resultIndex; i < e.results.length; i++) {
@@ -385,7 +432,7 @@ export default function LearnPage(): JSX.Element {
       setTx(final || interim);
       if (final) setChatInput(final);
     };
-    r.onend = () => setListening(false);
+    r.onend   = () => setListening(false);
     r.onerror = () => setListening(false);
     recogRef.current = r;
   }, [lang]);
@@ -407,6 +454,7 @@ export default function LearnPage(): JSX.Element {
   }, [voiceOn, lang]);
 
   const stopSpeak = (): void => { window.speechSynthesis?.cancel(); setSpeaking(false); };
+
   const toggleListen = (): void => {
     if (!recogRef.current) return;
     if (listening) { recogRef.current.stop(); setListening(false); }
@@ -414,12 +462,13 @@ export default function LearnPage(): JSX.Element {
   };
 
   // Navigation helpers
-  const goHome = (): void => { setView("home"); setActiveMod(null); setActiveLes(null); resetQuiz(); setMessages([]); setChatOpen(false); };
+  const goHome = (): void => {
+    setView("home"); setActiveMod(null); setActiveLes(null);
+    resetQuiz(); setMessages([]);
+  };
   const openModule = (mod: Module): void => { setActiveMod(mod); setView("module"); };
   const openLesson = (les: Lesson): void => {
     setActiveLes(les); setView("lesson"); resetQuiz(); setMessages([]);
-    setChatOpen(false);
-    // Welcome chat message scoped to lesson
     setMessages([{
       role: "assistant",
       content: `Hi! I'm your InsureIQ assistant for this lesson on **${les.title}**. Ask me anything about what you just read or watched — in ${lang.label}.`,
@@ -475,8 +524,8 @@ export default function LearnPage(): JSX.Element {
           messages: history,
         }),
       });
-      if (!res.ok) throw new Error();
-      const data = await res.json();
+      if (!res.ok) throw new Error("API error");
+      const data = await res.json() as { content?: Array<{ text?: string }> };
       const reply: string = data.content?.[0]?.text ?? "Sorry, I couldn't respond.";
       setMessages(prev => [...prev, { role: "assistant", content: reply }]);
       speak(reply);
@@ -494,6 +543,128 @@ export default function LearnPage(): JSX.Element {
   const overallProgress = Math.round((completedCount / totalLessons) * 100);
 
   /* ════════════════════════════════════════════════════════
+     STYLES
+  ════════════════════════════════════════════════════════ */
+  type Sty = React.CSSProperties;
+  type StyleMap = Record<string, Sty>;
+
+  const S: StyleMap = {
+    root:     { fontFamily:T.serif, background:T.cream, minHeight:"100vh", color:T.dark, display:"flex", flexDirection:"column" },
+    nav:          { display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 40px", height:56, background:T.dark, borderBottom:`1px solid ${T.darkBdr}`, flexShrink:0 },
+    brand:        { fontFamily:T.serif, fontSize:20, fontWeight:500, color:T.cream, background:"none", border:"none", cursor:"pointer", letterSpacing:"-0.3px" },
+    navLinks:     { display:"flex", gap:28 },
+    navLink:      { fontFamily:T.mono, fontSize:10, letterSpacing:"0.08em", color:T.muted, cursor:"pointer" },
+    langSelect:   { fontFamily:T.mono, fontSize:10, letterSpacing:"0.06em", background:T.darkCard, border:`1px solid ${T.darkBdr}`, color:T.cream, padding:"5px 10px", cursor:"pointer" },
+    voiceToggle:  { background:T.darkCard, border:`1px solid ${T.darkBdr}`, borderRadius:4, padding:"5px 8px", cursor:"pointer", fontSize:14, color:T.muted },
+    voiceToggleOn:{ borderColor:T.greenAcc, color:T.greenAcc },
+    page:   { maxWidth:1100, width:"100%", margin:"0 auto", padding:"40px 40px 80px", flex:1 },
+    eyebrow:{ fontFamily:T.mono, fontSize:10, letterSpacing:"0.14em", color:T.green, marginBottom:12 },
+    breadcrumb:  { display:"flex", alignItems:"center", gap:8, marginBottom:32, fontFamily:T.mono, fontSize:10, letterSpacing:"0.08em" },
+    breadBtn:    { background:"none", border:"none", cursor:"pointer", color:T.muted, fontFamily:T.mono, fontSize:10, letterSpacing:"0.08em", padding:0 },
+    breadSep:    { color:T.muted },
+    breadCurrent:{ color:T.dark },
+    hero:        { display:"grid", gridTemplateColumns:"1fr 280px", gap:40, paddingBottom:40, marginBottom:40, borderBottom:`1px solid ${T.creamBdr}` },
+    heroTitle:   { fontFamily:T.serif, fontSize:48, fontWeight:400, lineHeight:1.1, margin:"0 0 16px" },
+    heroSub:     { fontFamily:T.serif, fontSize:16, color:"#5A6A58", lineHeight:1.7, margin:0 },
+    progressCard:      { background:T.dark, padding:"24px", border:`1px solid ${T.darkBdr}` },
+    progressCardLabel: { fontFamily:T.mono, fontSize:9, letterSpacing:"0.14em", color:T.muted, marginBottom:10 },
+    progressBig:       { fontFamily:T.serif, fontSize:52, fontWeight:400, color:T.cream, lineHeight:1, marginBottom:10 },
+    progressTrack:     { height:2, background:T.darkBdr, marginBottom:8 },
+    progressFill:      { height:"100%", background:T.greenAcc, transition:"width .5s ease" },
+    progressSub:       { fontFamily:T.mono, fontSize:10, color:T.muted, marginBottom:16 },
+    progressModList:   { display:"flex", flexDirection:"column", gap:6, borderTop:`1px solid ${T.darkBdr}`, paddingTop:14 },
+    progressModRow:    { display:"flex", justifyContent:"space-between" },
+    progressModName:   { fontFamily:T.serif, fontSize:13, color:T.cream },
+    progressModCount:  { fontFamily:T.mono, fontSize:10, color:T.green },
+    modGrid:    { display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:1, border:`1px solid ${T.creamBdr}`, background:T.creamBdr },
+    modCard:    { background:T.cream, padding:"28px", display:"flex", flexDirection:"column", gap:10, transition:"background .15s" },
+    modCode:    { fontFamily:T.mono, fontSize:10, letterSpacing:"0.16em", color:T.muted },
+    modTitle:   { fontFamily:T.serif, fontSize:24, fontWeight:400, lineHeight:1.15 },
+    modSub:     { fontFamily:T.serif, fontSize:14, fontStyle:"italic", color:"#6A7A68" },
+    modDesc:    { fontFamily:T.serif, fontSize:14, color:"#5A6A58", lineHeight:1.7, flex:1, margin:0 },
+    modFooter:  { display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:6 },
+    modBarWrap: { display:"flex", alignItems:"center", gap:10, flex:1 },
+    modBar:     { flex:1, height:2, background:T.creamBdr },
+    modBarFill: { height:"100%", background:T.green, transition:"width .5s ease" },
+    modBarLabel:{ fontFamily:T.mono, fontSize:9, color:T.muted },
+    modArrow:   { fontFamily:T.mono, fontSize:16, color:T.green },
+    modPageHead:  { paddingBottom:32, marginBottom:8, borderBottom:`1px solid ${T.creamBdr}` },
+    modPageTitle: { fontFamily:T.serif, fontSize:38, fontWeight:400, margin:"0 0 12px" },
+    modPageSub:   { fontFamily:T.serif, fontSize:15, color:"#5A6A58", lineHeight:1.7, margin:0 },
+    lessonsList: { display:"flex", flexDirection:"column", gap:1, border:`1px solid ${T.creamBdr}`, background:T.creamBdr },
+    lesRow:      { display:"flex", gap:20, alignItems:"flex-start", padding:"24px 24px", background:T.cream, cursor:"pointer", transition:"background .12s" },
+    lesNum:      { fontFamily:T.mono, fontSize:13, color:T.muted, width:28, flexShrink:0, paddingTop:2 },
+    lesNumDone:  { color:T.green },
+    lesInfo:     { flex:1 },
+    lesTitle:    { fontFamily:T.serif, fontSize:20, fontWeight:400, marginBottom:4 },
+    lesSummary:  { fontFamily:T.serif, fontSize:14, color:"#5A6A58", lineHeight:1.65, fontStyle:"italic", marginBottom:10 },
+    lesMeta:     { display:"flex", gap:16, flexWrap:"wrap" },
+    lesMetaItem: { fontFamily:T.mono, fontSize:9, letterSpacing:"0.06em", color:T.muted },
+    lesAction:   { flexShrink:0 },
+    lesTag:      { fontFamily:T.mono, fontSize:9, letterSpacing:"0.12em", border:`1px solid ${T.creamBdr}`, padding:"4px 10px", color:T.muted },
+    lesTagDone:  { borderColor:T.green, color:T.green },
+    lessonLayout: { display:"grid", gridTemplateColumns:"1fr 320px", gap:24, alignItems:"start" },
+    lessonMain:   { display:"flex", flexDirection:"column", gap:24 },
+    lessonHead:   { borderBottom:`1px solid ${T.creamBdr}`, paddingBottom:20 },
+    lessonTitle:  { fontFamily:T.serif, fontSize:36, fontWeight:400, margin:"0 0 12px" },
+    lessonMeta:   { display:"flex", gap:16, alignItems:"center" },
+    readingCard:  { background:T.creamDim, border:`1px solid ${T.creamBdr}`, padding:"28px 32px" },
+    readingLabel: { fontFamily:T.mono, fontSize:9, letterSpacing:"0.14em", color:T.muted, marginBottom:20, paddingBottom:10, borderBottom:`1px solid ${T.creamBdr}` },
+    para:         { fontFamily:T.serif, fontSize:16, color:T.dark, lineHeight:1.8, marginBottom:14 },
+    videoCard: { border:`1px solid ${T.creamBdr}`, overflow:"hidden" },
+    videoWrap: { height:340, background:"#000" },
+    quizCta:     { background:T.dark, border:`1px solid ${T.darkBdr}`, padding:"20px 24px", display:"flex", justifyContent:"space-between", alignItems:"center", gap:20 },
+    quizCtaTitle:{ fontFamily:T.serif, fontSize:20, color:T.cream },
+    quizCtaSub:  { fontFamily:T.mono, fontSize:10, color:T.muted, marginTop:4 },
+    quizCtaBtn:  { fontFamily:T.mono, fontSize:11, letterSpacing:"0.1em", background:T.green, color:T.cream, border:"none", padding:"10px 24px", cursor:"pointer", flexShrink:0 },
+    chatSidebar:    { background:T.dark, border:`1px solid ${T.darkBdr}`, display:"flex", flexDirection:"column", position:"sticky", top:20, maxHeight:"85vh" },
+    chatHeader:     { padding:"16px 18px", borderBottom:`1px solid ${T.darkBdr}`, display:"flex", justifyContent:"space-between", alignItems:"center" },
+    chatHeaderLabel:{ fontFamily:T.mono, fontSize:9, letterSpacing:"0.12em", color:T.muted, marginBottom:3 },
+    chatHeaderTitle:{ fontFamily:T.serif, fontSize:16, color:T.cream },
+    chatVoiceBtn:   { width:30, height:30, background:"transparent", border:`1px solid ${T.darkBdr}`, color:T.muted, cursor:"pointer", fontFamily:T.mono, fontSize:12, display:"flex", alignItems:"center", justifyContent:"center" },
+    chatVoiceBtnOn: { borderColor:T.greenAcc, color:T.greenAcc },
+    chatStopBtn:    { width:30, height:30, background:"transparent", border:`1px solid ${T.darkBdr}`, color:T.muted, cursor:"pointer", fontSize:12, display:"flex", alignItems:"center", justifyContent:"center" },
+    chatMsgs:       { flex:1, overflowY:"auto", padding:"16px", display:"flex", flexDirection:"column", gap:12, minHeight:200, maxHeight:360 },
+    chatBubble:     { display:"flex", gap:8, alignItems:"flex-start" },
+    chatBubBot:     { alignSelf:"flex-start" },
+    chatBubUser:    { alignSelf:"flex-end", flexDirection:"row-reverse" },
+    chatAvatar:     { width:24, height:24, background:T.darkCard, border:`1px solid ${T.darkBdr}`, color:T.greenAcc, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:T.mono, fontSize:7, flexShrink:0 },
+    chatBubBody:    { background:T.darkCard, border:`1px solid ${T.darkBdr}`, padding:"10px 13px", fontFamily:T.serif, fontSize:13, color:T.cream, lineHeight:1.65 },
+    chatBubBodyUser:{ background:T.greenDim, borderColor:T.green, color:T.cream },
+    dot:            { display:"inline-block", width:5, height:5, borderRadius:"50%", background:T.muted, animation:"cb-blink 1.2s infinite ease-in-out" },
+    txPreview:      { fontFamily:T.serif, fontSize:12, fontStyle:"italic", color:T.green, padding:"8px 16px", borderTop:`1px solid ${T.darkBdr}` },
+    chatInputRow:   { display:"flex", borderTop:`1px solid ${T.darkBdr}` },
+    chatInput:      { flex:1, background:"transparent", border:"none", borderRight:`1px solid ${T.darkBdr}`, padding:"10px 14px", fontFamily:T.serif, fontSize:14, color:T.cream },
+    chatSendBtn:    { width:44, background:T.green, border:"none", color:T.cream, cursor:"pointer", fontSize:16, display:"flex", alignItems:"center", justifyContent:"center" },
+    quizWrap:    { maxWidth:720, margin:"0 auto" },
+    quizHead:    { marginBottom:36, paddingBottom:24, borderBottom:`1px solid ${T.creamBdr}` },
+    quizTitle:   { fontFamily:T.serif, fontSize:34, fontWeight:400, margin:"0 0 8px" },
+    quizSub:     { fontFamily:T.serif, fontSize:15, color:"#5A6A58", fontStyle:"italic" },
+    quizQ:       { background:T.creamDim, border:`1px solid ${T.creamBdr}`, padding:"24px", marginBottom:16 },
+    quizQNum:    { fontFamily:T.mono, fontSize:10, letterSpacing:"0.12em", color:T.muted, marginBottom:8 },
+    quizQText:   { fontFamily:T.serif, fontSize:18, lineHeight:1.5, marginBottom:18 },
+    quizOptions: { display:"flex", flexDirection:"column", gap:8 },
+    quizOption:  { display:"flex", alignItems:"center", gap:12, padding:"12px 16px", background:T.cream, border:`1px solid ${T.creamBdr}`, cursor:"pointer", textAlign:"left", fontFamily:T.serif, fontSize:15, color:T.dark, transition:"border-color .12s" },
+    quizOptionSel:{ borderColor:T.green, background:T.creamDim },
+    quizOptLetter:   { fontFamily:T.mono, fontSize:9, letterSpacing:"0.1em", width:22, height:22, border:`1px solid ${T.creamBdr}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, color:T.muted },
+    quizOptLetterSel:{ borderColor:T.green, color:T.green },
+    quizSubmit:  { fontFamily:T.mono, fontSize:11, letterSpacing:"0.1em", background:T.green, color:T.cream, border:"none", padding:"14px 36px", cursor:"pointer", marginTop:8, transition:"opacity .15s" },
+    resultHeader:{ padding:"32px", marginBottom:24, textAlign:"center" as const },
+    resultScore: { fontFamily:T.serif, fontSize:56, fontWeight:400, color:T.cream, lineHeight:1, marginBottom:8 },
+    resultStatus:{ fontFamily:T.mono, fontSize:11, letterSpacing:"0.14em", color:T.greenAcc, marginBottom:12 },
+    resultMsg:   { fontFamily:T.serif, fontSize:16, fontStyle:"italic", color:T.muted, lineHeight:1.6 },
+    resultQ:     { background:T.creamDim, border:`1px solid ${T.creamBdr}`, padding:"20px 24px", marginBottom:12 },
+    resultQIcon: { width:26, height:26, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:T.mono, fontSize:10, color:T.cream, flexShrink:0 },
+    resultCorrect:{ fontFamily:T.mono, fontSize:11, color:T.amber, marginBottom:8, letterSpacing:"0.04em" },
+    resultExplain:{ fontFamily:T.serif, fontSize:14, color:"#5A6A58", lineHeight:1.7, fontStyle:"italic" },
+    resultActions:{ display:"flex", gap:12, marginTop:24, flexWrap:"wrap" as const },
+    resultRetry:  { fontFamily:T.mono, fontSize:11, letterSpacing:"0.1em", background:"transparent", border:`1px solid ${T.creamBdr}`, color:T.dark, padding:"10px 22px", cursor:"pointer" },
+    resultLesson: { fontFamily:T.mono, fontSize:11, letterSpacing:"0.1em", background:"transparent", border:`1px solid ${T.creamBdr}`, color:T.dark, padding:"10px 22px", cursor:"pointer" },
+    resultModule: { fontFamily:T.mono, fontSize:11, letterSpacing:"0.1em", background:T.green, color:T.cream, border:"none", padding:"10px 22px", cursor:"pointer" },
+    footer: { padding:"18px 40px", borderTop:`1px solid ${T.creamBdr}`, fontFamily:T.mono, fontSize:10, letterSpacing:"0.06em", color:T.muted, marginTop:"auto" },
+  };
+
+  /* ════════════════════════════════════════════════════════
      RENDER
   ════════════════════════════════════════════════════════ */
   return (
@@ -502,12 +673,11 @@ export default function LearnPage(): JSX.Element {
         @keyframes cb-blink{0%,80%,100%{opacity:.2;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
         @keyframes cb-pulse{0%,100%{box-shadow:0 0 0 0 rgba(74,143,66,.4)}50%{box-shadow:0 0 0 8px rgba(74,143,66,0)}}
         @keyframes cb-fadein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-        .cb-root *{box-sizing:border-box;}
-        .cb-root button:hover{filter:brightness(1.07);}
+        *{box-sizing:border-box;}
+        button:hover{filter:brightness(1.07);}
         .cb-nav-link:hover{color:${T.cream}!important;}
         .cb-mod-card:hover{background:${T.creamDim}!important;cursor:pointer;}
         .cb-les-row:hover{background:${T.creamDim}!important;}
-        .cb-chip:hover{background:${T.creamDim}!important;border-color:${T.green}!important;color:${T.dark}!important;}
         .cb-option:hover{border-color:${T.green}!important;}
         .cb-chat-input:focus{outline:none;border-color:${T.green}!important;}
         textarea:focus,input:focus{outline:none;}
@@ -517,7 +687,7 @@ export default function LearnPage(): JSX.Element {
         ::-webkit-scrollbar-thumb{background:${T.creamBdr};border-radius:2px;}
       `}</style>
 
-      <div className="cb-root" style={S.root}>
+      <div style={S.root}>
 
         {/* ── NAV ── */}
         <nav style={S.nav}>
@@ -528,7 +698,6 @@ export default function LearnPage(): JSX.Element {
             ))}
             <span style={{ ...S.navLink, color: T.cream, borderBottom: `1px solid ${T.greenAcc}`, paddingBottom: 2 }}>LEARN</span>
           </div>
-          {/* Language + voice controls */}
           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
             <select
               value={lang.code}
@@ -547,11 +716,9 @@ export default function LearnPage(): JSX.Element {
           </div>
         </nav>
 
-        {/* ══════════════════════ HOME VIEW ══════════════════════ */}
+        {/* ══ HOME ══ */}
         {view === "home" && (
           <div className="cb-anim" style={S.page}>
-
-            {/* Hero */}
             <header style={S.hero}>
               <div>
                 <div style={S.eyebrow}>— INSURANCE EDUCATION</div>
@@ -564,7 +731,6 @@ export default function LearnPage(): JSX.Element {
                   No prior knowledge needed. Start anywhere.
                 </p>
               </div>
-              {/* Progress card */}
               <div style={S.progressCard}>
                 <div style={S.progressCardLabel}>YOUR PROGRESS</div>
                 <div style={S.progressBig}>{overallProgress}%</div>
@@ -586,18 +752,12 @@ export default function LearnPage(): JSX.Element {
               </div>
             </header>
 
-            {/* Modules grid */}
             <div style={S.modGrid}>
               {MODULES.map((mod) => {
                 const c = mod.lessons.filter(l => completed.has(l.id)).length;
                 const pct = Math.round((c / mod.lessons.length) * 100);
                 return (
-                  <div
-                    key={mod.id}
-                    className="cb-mod-card"
-                    style={S.modCard}
-                    onClick={() => openModule(mod)}
-                  >
+                  <div key={mod.id} className="cb-mod-card" style={S.modCard} onClick={() => openModule(mod)}>
                     <div style={S.modCode}>{mod.code}</div>
                     <div style={S.modTitle}>{mod.title}</div>
                     <div style={S.modSub}>{mod.subtitle}</div>
@@ -618,7 +778,7 @@ export default function LearnPage(): JSX.Element {
           </div>
         )}
 
-        {/* ══════════════════════ MODULE VIEW ══════════════════════ */}
+        {/* ══ MODULE ══ */}
         {view === "module" && activeModule && (
           <div className="cb-anim" style={S.page}>
             <div style={S.breadcrumb}>
@@ -626,26 +786,17 @@ export default function LearnPage(): JSX.Element {
               <span style={S.breadSep}>/</span>
               <span style={S.breadCurrent}>{activeModule.title}</span>
             </div>
-
             <header style={S.modPageHead}>
-              <div>
-                <div style={S.eyebrow}>{activeModule.code} — MODULE</div>
-                <h1 style={S.modPageTitle}>{activeModule.title}</h1>
-                <p style={S.modPageSub}>{activeModule.description}</p>
-              </div>
+              <div style={S.eyebrow}>{activeModule.code} — MODULE</div>
+              <h1 style={S.modPageTitle}>{activeModule.title}</h1>
+              <p style={S.modPageSub}>{activeModule.description}</p>
             </header>
-
             <div style={S.lessonsList}>
               {activeModule.lessons.map((les, idx) => {
-                const isDone  = completed.has(les.id);
-                const score   = quizScores[les.id];
+                const isDone = completed.has(les.id);
+                const score  = quizScores[les.id];
                 return (
-                  <div
-                    key={les.id}
-                    className="cb-les-row"
-                    style={S.lesRow}
-                    onClick={() => openLesson(les)}
-                  >
+                  <div key={les.id} className="cb-les-row" style={S.lesRow} onClick={() => openLesson(les)}>
                     <div style={{ ...S.lesNum, ...(isDone ? S.lesNumDone : {}) }}>
                       {isDone ? "✓" : String(idx + 1).padStart(2, "0")}
                     </div>
@@ -675,7 +826,7 @@ export default function LearnPage(): JSX.Element {
           </div>
         )}
 
-        {/* ══════════════════════ LESSON VIEW ══════════════════════ */}
+        {/* ══ LESSON ══ */}
         {view === "lesson" && activeLesson && activeModule && (
           <div className="cb-anim" style={S.page}>
             <div style={S.breadcrumb}>
@@ -685,9 +836,7 @@ export default function LearnPage(): JSX.Element {
               <span style={S.breadSep}>/</span>
               <span style={S.breadCurrent}>{activeLesson.title}</span>
             </div>
-
             <div style={S.lessonLayout}>
-              {/* Main content */}
               <div style={S.lessonMain}>
                 <div style={S.lessonHead}>
                   <div style={S.eyebrow}>{activeModule.code} — {activeModule.title}</div>
@@ -701,24 +850,17 @@ export default function LearnPage(): JSX.Element {
                     )}
                   </div>
                 </div>
-
-                {/* Reading content */}
                 <div style={S.readingCard}>
                   <div style={S.readingLabel}>READING</div>
                   {activeLesson.content.map((para, i) => (
-                    <div key={i} style={S.para}>
-                      <Md text={para} />
-                    </div>
+                    <div key={i} style={S.para}><Md text={para} /></div>
                   ))}
                 </div>
-
-                {/* Video */}
                 <div style={S.videoCard}>
                   <div style={S.readingLabel}>VIDEO — {activeLesson.videoTitle}</div>
                   <div style={S.videoWrap}>
                     <iframe
-                      width="100%"
-                      height="100%"
+                      width="100%" height="100%"
                       src={`https://www.youtube.com/embed/${activeLesson.videoId}`}
                       title={activeLesson.videoTitle}
                       frameBorder="0"
@@ -728,16 +870,12 @@ export default function LearnPage(): JSX.Element {
                     />
                   </div>
                 </div>
-
-                {/* Quiz CTA */}
                 <div style={S.quizCta}>
                   <div>
                     <div style={S.quizCtaTitle}>Test your understanding</div>
                     <div style={S.quizCtaSub}>{activeLesson.quiz.length} questions · Complete to mark lesson done</div>
                   </div>
-                  <button style={S.quizCtaBtn} onClick={startQuiz}>
-                    TAKE QUIZ →
-                  </button>
+                  <button style={S.quizCtaBtn} onClick={startQuiz}>TAKE QUIZ →</button>
                 </div>
               </div>
 
@@ -752,7 +890,7 @@ export default function LearnPage(): JSX.Element {
                     <button
                       style={{ ...S.chatVoiceBtn, ...(listening ? S.chatVoiceBtnOn : {}) }}
                       onClick={toggleListen}
-                      title={listening ? "Stop" : "Speak in " + lang.label}
+                      title={listening ? "Stop" : `Speak in ${lang.label}`}
                     >
                       {listening ? "◼" : "◎"}
                     </button>
@@ -761,7 +899,6 @@ export default function LearnPage(): JSX.Element {
                     )}
                   </div>
                 </div>
-
                 <div style={S.chatMsgs}>
                   {messages.map((m, i) => (
                     <div key={i} style={{ ...S.chatBubble, ...(m.role === "user" ? S.chatBubUser : S.chatBubBot) }}>
@@ -783,24 +920,22 @@ export default function LearnPage(): JSX.Element {
                   )}
                   <div ref={endRef} />
                 </div>
-
                 {listening && transcript && (
                   <div style={S.txPreview}>{transcript}</div>
                 )}
-
                 <div style={S.chatInputRow}>
                   <input
                     className="cb-chat-input"
                     style={S.chatInput}
                     value={chatInput}
                     onChange={e => setChatInput(e.target.value)}
-                    onKeyDown={e => e.key === "Enter" && !e.shiftKey && void sendChat(chatInput)}
+                    onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { void sendChat(chatInput); } }}
                     placeholder={`Ask in ${lang.label}…`}
                   />
                   <button
                     style={{ ...S.chatSendBtn, opacity: chatLoading || !chatInput.trim() ? 0.35 : 1 }}
                     disabled={chatLoading || !chatInput.trim()}
-                    onClick={() => void sendChat(chatInput)}
+                    onClick={() => { void sendChat(chatInput); }}
                   >
                     →
                   </button>
@@ -810,20 +945,18 @@ export default function LearnPage(): JSX.Element {
           </div>
         )}
 
-        {/* ══════════════════════ QUIZ VIEW ══════════════════════ */}
+        {/* ══ QUIZ ══ */}
         {view === "quiz" && activeLesson && (
           <div className="cb-anim" style={S.page}>
             <div style={S.breadcrumb}>
               <button style={S.breadBtn} onClick={() => setView("lesson")}>← Back to lesson</button>
             </div>
-
             <div style={S.quizWrap}>
               <div style={S.quizHead}>
                 <div style={S.eyebrow}>QUIZ — {activeLesson.title}</div>
                 <h2 style={S.quizTitle}>Test your understanding</h2>
                 <p style={S.quizSub}>Answer all {activeLesson.quiz.length} questions. Score 2 or more to complete the lesson.</p>
               </div>
-
               {activeLesson.quiz.map((q, qi) => (
                 <div key={qi} style={S.quizQ}>
                   <div style={S.quizQNum}>Q{qi + 1}</div>
@@ -833,10 +966,7 @@ export default function LearnPage(): JSX.Element {
                       <button
                         key={oi}
                         className="cb-option"
-                        style={{
-                          ...S.quizOption,
-                          ...(quizAnswers[qi] === oi ? S.quizOptionSel : {}),
-                        }}
+                        style={{ ...S.quizOption, ...(quizAnswers[qi] === oi ? S.quizOptionSel : {}) }}
                         onClick={() => {
                           const next = [...quizAnswers];
                           next[qi] = oi;
@@ -852,7 +982,6 @@ export default function LearnPage(): JSX.Element {
                   </div>
                 </div>
               ))}
-
               <button
                 style={{ ...S.quizSubmit, opacity: quizAnswers.some(a => a === null) ? 0.4 : 1 }}
                 disabled={quizAnswers.some(a => a === null)}
@@ -864,64 +993,58 @@ export default function LearnPage(): JSX.Element {
           </div>
         )}
 
-        {/* ══════════════════════ QUIZ RESULT ══════════════════════ */}
-        {view === "quiz-result" && activeLesson && (
-          <div className="cb-anim" style={S.page}>
-            <div style={S.quizWrap}>
-              {(() => {
-                const score = quizScores[activeLesson.id] ?? 0;
-                const pass  = score >= 2;
-                return (
-                  <>
-                    <div style={{ ...S.resultHeader, background: pass ? T.greenDim : "#3D1A1A" }}>
-                      <div style={S.resultScore}>{score} / {activeLesson.quiz.length}</div>
-                      <div style={S.resultStatus}>{pass ? "LESSON COMPLETE" : "KEEP STUDYING"}</div>
-                      <div style={S.resultMsg}>
-                        {pass
-                          ? "Well done. You've demonstrated a solid understanding of this topic."
-                          : "Review the lesson material and try again. No pressure — this is self-paced learning."}
+        {/* ══ QUIZ RESULT ══ */}
+        {view === "quiz-result" && activeLesson && (() => {
+          const score = quizScores[activeLesson.id] ?? 0;
+          const pass  = score >= 2;
+          return (
+            <div className="cb-anim" style={S.page}>
+              <div style={S.quizWrap}>
+                <div style={{ ...S.resultHeader, background: pass ? T.greenDim : "#3D1A1A" }}>
+                  <div style={S.resultScore}>{score} / {activeLesson.quiz.length}</div>
+                  <div style={S.resultStatus}>{pass ? "LESSON COMPLETE" : "KEEP STUDYING"}</div>
+                  <div style={S.resultMsg}>
+                    {pass
+                      ? "Well done. You've demonstrated a solid understanding of this topic."
+                      : "Review the lesson material and try again. No pressure — this is self-paced learning."}
+                  </div>
+                </div>
+                {activeLesson.quiz.map((q, qi) => {
+                  const chosen  = quizAnswers[qi];
+                  const correct = q.correct;
+                  const isRight = chosen === correct;
+                  return (
+                    <div key={qi} style={S.resultQ}>
+                      <div style={{ display:"flex", gap:10, alignItems:"flex-start", marginBottom:10 }}>
+                        <span style={{ ...S.resultQIcon, background: isRight ? T.greenDim : "#3D1A1A" }}>
+                          {isRight ? "✓" : "✗"}
+                        </span>
+                        <div style={S.quizQText}>{q.question}</div>
                       </div>
-                    </div>
-
-                    {activeLesson.quiz.map((q, qi) => {
-                      const chosen  = quizAnswers[qi];
-                      const correct = q.correct;
-                      const isRight = chosen === correct;
-                      return (
-                        <div key={qi} style={S.resultQ}>
-                          <div style={{ display:"flex", gap:10, alignItems:"flex-start", marginBottom:10 }}>
-                            <span style={{ ...S.resultQIcon, background: isRight ? T.greenDim : "#3D1A1A" }}>
-                              {isRight ? "✓" : "✗"}
-                            </span>
-                            <div style={S.quizQText}>{q.question}</div>
-                          </div>
-                          {!isRight && (
-                            <div style={S.resultCorrect}>
-                              Correct answer: <strong>{q.options[correct]}</strong>
-                            </div>
-                          )}
-                          <div style={S.resultExplain}>{q.explanation}</div>
+                      {!isRight && (
+                        <div style={S.resultCorrect}>
+                          Correct answer: <strong>{q.options[correct]}</strong>
                         </div>
-                      );
-                    })}
-
-                    <div style={S.resultActions}>
-                      {!pass && (
-                        <button style={S.resultRetry} onClick={startQuiz}>RETRY QUIZ</button>
                       )}
-                      <button style={S.resultLesson} onClick={() => setView("lesson")}>
-                        {pass ? "BACK TO LESSON" : "REVIEW LESSON"}
-                      </button>
-                      <button style={S.resultModule} onClick={() => setView("module")}>
-                        VIEW ALL LESSONS →
-                      </button>
+                      <div style={S.resultExplain}>{q.explanation}</div>
                     </div>
-                  </>
-                );
-              })()}
+                  );
+                })}
+                <div style={S.resultActions}>
+                  {!pass && (
+                    <button style={S.resultRetry} onClick={startQuiz}>RETRY QUIZ</button>
+                  )}
+                  <button style={S.resultLesson} onClick={() => setView("lesson")}>
+                    {pass ? "BACK TO LESSON" : "REVIEW LESSON"}
+                  </button>
+                  <button style={S.resultModule} onClick={() => setView("module")}>
+                    VIEW ALL LESSONS →
+                  </button>
+                </div>
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         <footer style={S.footer}>
           CareBridge AI · Insurance Education · Self-paced · Not legal advice
@@ -930,155 +1053,3 @@ export default function LearnPage(): JSX.Element {
     </>
   );
 }
-
-/* ══════════════════════════════════════════════════════════════
-   STYLES
-══════════════════════════════════════════════════════════════ */
-type Sty = React.CSSProperties;
-type StyleMap = Record<string, Sty>;
-
-const S: StyleMap = {
-  root:     { fontFamily:T.serif, background:T.cream, minHeight:"100vh", color:T.dark, display:"flex", flexDirection:"column" },
-
-  /* nav */
-  nav:          { display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 40px", height:56, background:T.dark, borderBottom:`1px solid ${T.darkBdr}`, flexShrink:0 },
-  brand:        { fontFamily:T.serif, fontSize:20, fontWeight:500, color:T.cream, background:"none", border:"none", cursor:"pointer", letterSpacing:"-0.3px" },
-  navLinks:     { display:"flex", gap:28 },
-  navLink:      { fontFamily:T.mono, fontSize:10, letterSpacing:"0.08em", color:T.muted, cursor:"pointer" },
-  langSelect:   { fontFamily:T.mono, fontSize:10, letterSpacing:"0.06em", background:T.darkCard, border:`1px solid ${T.darkBdr}`, color:T.cream, padding:"5px 10px", cursor:"pointer" },
-  voiceToggle:  { background:T.darkCard, border:`1px solid ${T.darkBdr}`, borderRadius:4, padding:"5px 8px", cursor:"pointer", fontSize:14, color:T.muted },
-  voiceToggleOn:{ borderColor:T.greenAcc, color:T.greenAcc },
-
-  /* page shell */
-  page:   { maxWidth:1100, width:"100%", margin:"0 auto", padding:"40px 40px 80px", flex:1 },
-  eyebrow:{ fontFamily:T.mono, fontSize:10, letterSpacing:"0.14em", color:T.green, marginBottom:12 },
-
-  /* breadcrumb */
-  breadcrumb:  { display:"flex", alignItems:"center", gap:8, marginBottom:32, fontFamily:T.mono, fontSize:10, letterSpacing:"0.08em" },
-  breadBtn:    { background:"none", border:"none", cursor:"pointer", color:T.muted, fontFamily:T.mono, fontSize:10, letterSpacing:"0.08em", padding:0 },
-  breadSep:    { color:T.muted },
-  breadCurrent:{ color:T.dark },
-
-  /* home hero */
-  hero:        { display:"grid", gridTemplateColumns:"1fr 280px", gap:40, paddingBottom:40, marginBottom:40, borderBottom:`1px solid ${T.creamBdr}` },
-  heroTitle:   { fontFamily:T.serif, fontSize:48, fontWeight:400, lineHeight:1.1, margin:"0 0 16px" },
-  heroSub:     { fontFamily:T.serif, fontSize:16, color:"#5A6A58", lineHeight:1.7, margin:0 },
-
-  progressCard:      { background:T.dark, padding:"24px", border:`1px solid ${T.darkBdr}` },
-  progressCardLabel: { fontFamily:T.mono, fontSize:9, letterSpacing:"0.14em", color:T.muted, marginBottom:10 },
-  progressBig:       { fontFamily:T.serif, fontSize:52, fontWeight:400, color:T.cream, lineHeight:1, marginBottom:10 },
-  progressTrack:     { height:2, background:T.darkBdr, marginBottom:8 },
-  progressFill:      { height:"100%", background:T.greenAcc, transition:"width .5s ease" },
-  progressSub:       { fontFamily:T.mono, fontSize:10, color:T.muted, marginBottom:16 },
-  progressModList:   { display:"flex", flexDirection:"column", gap:6, borderTop:`1px solid ${T.darkBdr}`, paddingTop:14 },
-  progressModRow:    { display:"flex", justifyContent:"space-between" },
-  progressModName:   { fontFamily:T.serif, fontSize:13, color:T.cream },
-  progressModCount:  { fontFamily:T.mono, fontSize:10, color:T.green },
-
-  /* module cards grid */
-  modGrid:    { display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:1, border:`1px solid ${T.creamBdr}`, background:T.creamBdr },
-  modCard:    { background:T.cream, padding:"28px", display:"flex", flexDirection:"column", gap:10, transition:"background .15s" },
-  modCode:    { fontFamily:T.mono, fontSize:10, letterSpacing:"0.16em", color:T.muted },
-  modTitle:   { fontFamily:T.serif, fontSize:24, fontWeight:400, lineHeight:1.15 },
-  modSub:     { fontFamily:T.serif, fontSize:14, fontStyle:"italic", color:"#6A7A68" },
-  modDesc:    { fontFamily:T.serif, fontSize:14, color:"#5A6A58", lineHeight:1.7, flex:1, margin:0 },
-  modFooter:  { display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:6 },
-  modBarWrap: { display:"flex", alignItems:"center", gap:10, flex:1 },
-  modBar:     { flex:1, height:2, background:T.creamBdr },
-  modBarFill: { height:"100%", background:T.green, transition:"width .5s ease" },
-  modBarLabel:{ fontFamily:T.mono, fontSize:9, color:T.muted },
-  modArrow:   { fontFamily:T.mono, fontSize:16, color:T.green },
-
-  /* module page */
-  modPageHead:  { paddingBottom:32, marginBottom:8, borderBottom:`1px solid ${T.creamBdr}` },
-  modPageTitle: { fontFamily:T.serif, fontSize:38, fontWeight:400, margin:"0 0 12px" },
-  modPageSub:   { fontFamily:T.serif, fontSize:15, color:"#5A6A58", lineHeight:1.7, margin:0 },
-
-  /* lessons list */
-  lessonsList: { display:"flex", flexDirection:"column", gap:1, border:`1px solid ${T.creamBdr}`, background:T.creamBdr },
-  lesRow:      { display:"flex", gap:20, alignItems:"flex-start", padding:"24px 24px", background:T.cream, cursor:"pointer", transition:"background .12s" },
-  lesNum:      { fontFamily:T.mono, fontSize:13, color:T.muted, width:28, flexShrink:0, paddingTop:2 },
-  lesNumDone:  { color:T.green },
-  lesInfo:     { flex:1 },
-  lesTitle:    { fontFamily:T.serif, fontSize:20, fontWeight:400, marginBottom:4 },
-  lesSummary:  { fontFamily:T.serif, fontSize:14, color:"#5A6A58", lineHeight:1.65, fontStyle:"italic", marginBottom:10 },
-  lesMeta:     { display:"flex", gap:16, flexWrap:"wrap" },
-  lesMetaItem: { fontFamily:T.mono, fontSize:9, letterSpacing:"0.06em", color:T.muted },
-  lesAction:   { flexShrink:0 },
-  lesTag:      { fontFamily:T.mono, fontSize:9, letterSpacing:"0.12em", border:`1px solid ${T.creamBdr}`, padding:"4px 10px", color:T.muted },
-  lesTagDone:  { borderColor:T.green, color:T.green },
-
-  /* lesson layout */
-  lessonLayout: { display:"grid", gridTemplateColumns:"1fr 320px", gap:24, alignItems:"start" },
-  lessonMain:   { display:"flex", flexDirection:"column", gap:24 },
-  lessonHead:   { borderBottom:`1px solid ${T.creamBdr}`, paddingBottom:20 },
-  lessonTitle:  { fontFamily:T.serif, fontSize:36, fontWeight:400, margin:"0 0 12px" },
-  lessonMeta:   { display:"flex", gap:16, alignItems:"center" },
-
-  /* reading */
-  readingCard:  { background:T.creamDim, border:`1px solid ${T.creamBdr}`, padding:"28px 32px" },
-  readingLabel: { fontFamily:T.mono, fontSize:9, letterSpacing:"0.14em", color:T.muted, marginBottom:20, paddingBottom:10, borderBottom:`1px solid ${T.creamBdr}` },
-  para:         { fontFamily:T.serif, fontSize:16, color:T.dark, lineHeight:1.8, marginBottom:14 },
-
-  /* video */
-  videoCard: { border:`1px solid ${T.creamBdr}`, overflow:"hidden" },
-  videoWrap: { height:340, background:"#000" },
-
-  /* quiz CTA */
-  quizCta:     { background:T.dark, border:`1px solid ${T.darkBdr}`, padding:"20px 24px", display:"flex", justifyContent:"space-between", alignItems:"center", gap:20 },
-  quizCtaTitle:{ fontFamily:T.serif, fontSize:20, color:T.cream },
-  quizCtaSub:  { fontFamily:T.mono, fontSize:10, color:T.muted, marginTop:4 },
-  quizCtaBtn:  { fontFamily:T.mono, fontSize:11, letterSpacing:"0.1em", background:T.green, color:T.cream, border:"none", padding:"10px 24px", cursor:"pointer", flexShrink:0 },
-
-  /* chat sidebar */
-  chatSidebar:    { background:T.dark, border:`1px solid ${T.darkBdr}`, display:"flex", flexDirection:"column", position:"sticky", top:20, maxHeight:"85vh" },
-  chatHeader:     { padding:"16px 18px", borderBottom:`1px solid ${T.darkBdr}`, display:"flex", justifyContent:"space-between", alignItems:"center" },
-  chatHeaderLabel:{ fontFamily:T.mono, fontSize:9, letterSpacing:"0.12em", color:T.muted, marginBottom:3 },
-  chatHeaderTitle:{ fontFamily:T.serif, fontSize:16, color:T.cream },
-  chatVoiceBtn:   { width:30, height:30, background:"transparent", border:`1px solid ${T.darkBdr}`, color:T.muted, cursor:"pointer", fontFamily:T.mono, fontSize:12, display:"flex", alignItems:"center", justifyContent:"center" },
-  chatVoiceBtnOn: { borderColor:T.greenAcc, color:T.greenAcc, animation:"cb-pulse 1.5s infinite" },
-  chatStopBtn:    { width:30, height:30, background:"transparent", border:`1px solid ${T.darkBdr}`, color:T.muted, cursor:"pointer", fontSize:12, display:"flex", alignItems:"center", justifyContent:"center" },
-  chatMsgs:       { flex:1, overflowY:"auto", padding:"16px", display:"flex", flexDirection:"column", gap:12, minHeight:200, maxHeight:360 },
-  chatBubble:     { display:"flex", gap:8, alignItems:"flex-start" },
-  chatBubBot:     { alignSelf:"flex-start" },
-  chatBubUser:    { alignSelf:"flex-end", flexDirection:"row-reverse" },
-  chatAvatar:     { width:24, height:24, background:T.darkCard, border:`1px solid ${T.darkBdr}`, color:T.greenAcc, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:T.mono, fontSize:7, flexShrink:0 },
-  chatBubBody:    { background:T.darkCard, border:`1px solid ${T.darkBdr}`, padding:"10px 13px", fontFamily:T.serif, fontSize:13, color:T.cream, lineHeight:1.65 },
-  chatBubBodyUser:{ background:T.greenDim, borderColor:T.green, color:T.cream },
-  dot:            { display:"inline-block", width:5, height:5, borderRadius:"50%", background:T.muted, animation:"cb-blink 1.2s infinite ease-in-out" },
-  txPreview:      { fontFamily:T.serif, fontSize:12, fontStyle:"italic", color:T.green, padding:"8px 16px", borderTop:`1px solid ${T.darkBdr}` },
-  chatInputRow:   { display:"flex", borderTop:`1px solid ${T.darkBdr}` },
-  chatInput:      { flex:1, background:"transparent", border:"none", borderRight:`1px solid ${T.darkBdr}`, padding:"10px 14px", fontFamily:T.serif, fontSize:14, color:T.cream },
-  chatSendBtn:    { width:44, background:T.green, border:"none", color:T.cream, cursor:"pointer", fontSize:16, display:"flex", alignItems:"center", justifyContent:"center" },
-
-  /* quiz */
-  quizWrap:    { maxWidth:720, margin:"0 auto" },
-  quizHead:    { marginBottom:36, paddingBottom:24, borderBottom:`1px solid ${T.creamBdr}` },
-  quizTitle:   { fontFamily:T.serif, fontSize:34, fontWeight:400, margin:"0 0 8px" },
-  quizSub:     { fontFamily:T.serif, fontSize:15, color:"#5A6A58", fontStyle:"italic" },
-  quizQ:       { background:T.creamDim, border:`1px solid ${T.creamBdr}`, padding:"24px", marginBottom:16 },
-  quizQNum:    { fontFamily:T.mono, fontSize:10, letterSpacing:"0.12em", color:T.muted, marginBottom:8 },
-  quizQText:   { fontFamily:T.serif, fontSize:18, lineHeight:1.5, marginBottom:18 },
-  quizOptions: { display:"flex", flexDirection:"column", gap:8 },
-  quizOption:  { display:"flex", alignItems:"center", gap:12, padding:"12px 16px", background:T.cream, border:`1px solid ${T.creamBdr}`, cursor:"pointer", textAlign:"left", fontFamily:T.serif, fontSize:15, color:T.dark, transition:"border-color .12s" },
-  quizOptionSel:{ borderColor:T.green, background:T.creamDim },
-  quizOptLetter:   { fontFamily:T.mono, fontSize:9, letterSpacing:"0.1em", width:22, height:22, border:`1px solid ${T.creamBdr}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, color:T.muted },
-  quizOptLetterSel:{ borderColor:T.green, color:T.green, background:T.greenDim + "44" },
-  quizSubmit:  { fontFamily:T.mono, fontSize:11, letterSpacing:"0.1em", background:T.green, color:T.cream, border:"none", padding:"14px 36px", cursor:"pointer", marginTop:8, transition:"opacity .15s" },
-
-  /* quiz result */
-  resultHeader:{ padding:"32px", marginBottom:24, textAlign:"center" as const },
-  resultScore: { fontFamily:T.serif, fontSize:56, fontWeight:400, color:T.cream, lineHeight:1, marginBottom:8 },
-  resultStatus:{ fontFamily:T.mono, fontSize:11, letterSpacing:"0.14em", color:T.greenAcc, marginBottom:12 },
-  resultMsg:   { fontFamily:T.serif, fontSize:16, fontStyle:"italic", color:T.muted, lineHeight:1.6 },
-  resultQ:     { background:T.creamDim, border:`1px solid ${T.creamBdr}`, padding:"20px 24px", marginBottom:12 },
-  resultQIcon: { width:26, height:26, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:T.mono, fontSize:10, color:T.cream, flexShrink:0 },
-  resultCorrect:{ fontFamily:T.mono, fontSize:11, color:T.amber, marginBottom:8, letterSpacing:"0.04em" },
-  resultExplain:{ fontFamily:T.serif, fontSize:14, color:"#5A6A58", lineHeight:1.7, fontStyle:"italic" },
-  resultActions:{ display:"flex", gap:12, marginTop:24, flexWrap:"wrap" as const },
-  resultRetry:  { fontFamily:T.mono, fontSize:11, letterSpacing:"0.1em", background:"transparent", border:`1px solid ${T.creamBdr}`, color:T.dark, padding:"10px 22px", cursor:"pointer" },
-  resultLesson: { fontFamily:T.mono, fontSize:11, letterSpacing:"0.1em", background:"transparent", border:`1px solid ${T.creamBdr}`, color:T.dark, padding:"10px 22px", cursor:"pointer" },
-  resultModule: { fontFamily:T.mono, fontSize:11, letterSpacing:"0.1em", background:T.green, color:T.cream, border:"none", padding:"10px 22px", cursor:"pointer" },
-
-  footer: { padding:"18px 40px", borderTop:`1px solid ${T.creamBdr}`, fontFamily:T.mono, fontSize:10, letterSpacing:"0.06em", color:T.muted, marginTop:"auto" },
-};
