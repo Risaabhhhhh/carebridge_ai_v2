@@ -201,9 +201,10 @@ def run_report_chat(
     prompt = report_chat_prompt(report_data, history, user_question, lang=lang)
 
     raw = generate(
-        prompt, model, tokenizer,
-        max_new_tokens=450, json_mode=False, temperature=0.35,
-    )
+    prompt, model, tokenizer,
+    max_new_tokens=450, json_mode=False, temperature=0.35,
+)
+    print(f"DEBUG raw='{raw}'")  # ← add this
 
     answer = raw.strip() if raw and raw.strip() else ""
 
