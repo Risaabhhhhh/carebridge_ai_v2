@@ -11,7 +11,7 @@ def generate(
     max_new_tokens: int = 150,
     json_mode: bool = False,
     timeout: int = 300,
-    temperature: float = 0.35,
+    temperature: float = 0.0,
 ):
     """
     Robust generator for MedGemma 4B-IT.
@@ -24,6 +24,7 @@ def generate(
     eos_id = eos_id[0] if isinstance(eos_id, list) else eos_id
     eos_id = eos_id if eos_id is not None else 1
 
+    # 🔥 Gemma requires pad == eos
     pad_id = tokenizer.pad_token_id
     if pad_id is None or pad_id != eos_id:
         pad_id = eos_id
@@ -31,24 +32,21 @@ def generate(
     tokenizer.padding_side = "left"
 
     # --------------------------------------------------
-    # Build messages
+    # Messages
     # --------------------------------------------------
     if json_mode:
         system_msg = (
             "Return ONLY a valid JSON object. "
             "No explanation. No markdown. No text before or after JSON."
         )
-        messages = [
-            {"role": "user", "content": f"{system_msg}\n\n{prompt}"},
-        ]
     else:
-        # For chat/QA: use system + user roles so Gemma understands the task
-        messages = [
-            {"role": "user",      "content": prompt},
-            # We do NOT add an assistant turn — let the model generate it
-        ]
+        system_msg = "Give clear and direct answers."
 
-    input_ids      = None
+    messages = [
+        {"role": "user", "content": f"{system_msg}\n\n{prompt}"},
+    ]
+
+    input_ids = None
     attention_mask = None
 
     # --------------------------------------------------
@@ -58,7 +56,7 @@ def generate(
         chat_result = tokenizer.apply_chat_template(
             messages,
             return_tensors="pt",
-            add_generation_prompt=True,   # appends <start_of_turn>model\n
+            add_generation_prompt=True,
             truncation=True,
             max_length=1800,
         )
@@ -69,6 +67,7 @@ def generate(
             input_ids = chat_result["input_ids"].to(model.device)
 
         attention_mask = torch.ones_like(input_ids)
+
         print(f"✅ apply_chat_template OK — {input_ids.shape[1]} tokens")
 
     except Exception as e:
@@ -80,20 +79,12 @@ def generate(
     # --------------------------------------------------
     if input_ids is None:
         bos = tokenizer.bos_token or "<bos>"
-        if json_mode:
-            gemma_prompt = (
-                f"{bos}<start_of_turn>user\n"
-                f"Return ONLY valid JSON.\n\n{prompt}"
-                f"<end_of_turn>\n"
-                f"<start_of_turn>model\n"
-            )
-        else:
-            gemma_prompt = (
-                f"{bos}<start_of_turn>user\n"
-                f"{prompt}"
-                f"<end_of_turn>\n"
-                f"<start_of_turn>model\n"
-            )
+        gemma_prompt = (
+            f"{bos}<start_of_turn>user\n"
+            f"{system_msg}\n\n{prompt}"
+            f"<end_of_turn>\n"
+            f"<start_of_turn>model\n"
+        )
 
         try:
             inputs = tokenizer(
@@ -104,8 +95,9 @@ def generate(
                 add_special_tokens=False,
             ).to(model.device)
 
-            input_ids      = inputs["input_ids"]
+            input_ids = inputs["input_ids"]
             attention_mask = inputs["attention_mask"]
+
             print(f"✅ Gemma fallback OK — {input_ids.shape[1]} tokens")
 
         except Exception as e:
@@ -126,37 +118,25 @@ def generate(
                 torch.cuda.empty_cache()
 
             with torch.no_grad():
-                if json_mode:
-                    # Deterministic for structured output
-                    output = model.generate(
-                        input_ids=input_ids,
-                        attention_mask=attention_mask,
-                        max_new_tokens=max_new_tokens,
-                        do_sample=False,
-                        temperature=1.0,      # ignored when do_sample=False
-                        repetition_penalty=1.1,
-                        use_cache=True,
-                        eos_token_id=eos_id,
-                        pad_token_id=pad_id,
-                    )
-                else:
-                    # ── Sampling for chat/QA — this is the critical fix ──
-                    # do_sample=False causes Gemma to emit EOS immediately
-                    # when it can't greedily decode a good response.
-                    # Sampling with temperature produces actual text.
-                    output = model.generate(
-                        input_ids=input_ids,
-                        attention_mask=attention_mask,
-                        max_new_tokens=max_new_tokens,
-                        do_sample=True,
-                        temperature=temperature if temperature > 0 else 0.35,
-                        top_p=0.92,
-                        top_k=50,
-                        repetition_penalty=1.15,
-                        use_cache=True,
-                        eos_token_id=eos_id,
-                        pad_token_id=pad_id,
-                    )
+                output = model.generate(
+                    input_ids=input_ids,
+                    attention_mask=attention_mask,
+
+                    max_new_tokens=max_new_tokens,
+                    
+
+                    # deterministic = safer for structured output
+                    do_sample=False,
+                    temperature=0.1,
+
+                    repetition_penalty=1.1,
+                    use_cache=True,
+
+                    eos_token_id=eos_id,
+                    pad_token_id=pad_id,
+
+                    early_stopping=True,
+                )
 
             result_container["output"] = output
 
@@ -168,7 +148,7 @@ def generate(
     thread.join(timeout)
 
     if thread.is_alive():
-        print("⚠ Generation timed out")
+        print(f"⚠ Generation timed out")
         return "{}" if json_mode else ""
 
     if result_container["error"]:
@@ -179,7 +159,7 @@ def generate(
         return "{}" if json_mode else ""
 
     # --------------------------------------------------
-    # Decode — new tokens only
+    # Decode
     # --------------------------------------------------
     new_tokens = result_container["output"][0][input_len:]
     print(f"New tokens generated: {len(new_tokens)}")
@@ -190,13 +170,11 @@ def generate(
         clean_up_tokenization_spaces=True,
     ).strip()
 
-    # If skip_special_tokens wiped everything, try without
     if not decoded:
         decoded_raw = tokenizer.decode(new_tokens, skip_special_tokens=False)
         decoded = re.sub(r"<[^>]+>", "", decoded_raw).strip()
 
         if not decoded:
-            print("⚠ Decoded output is empty after both attempts")
             return "{}" if json_mode else ""
 
     print("MODEL RAW OUTPUT:", repr(decoded[:300]))
@@ -234,11 +212,11 @@ def _extract_json(text: str) -> str:
 # --------------------------------------------------
 
 _VALUE_MAP = {
-    "high risk":     "High Risk",
+    "high risk": "High Risk",
     "moderate risk": "Moderate Risk",
-    "medium risk":   "Moderate Risk",
-    "low risk":      "Low Risk",
-    "not found":     "Not Found",
+    "medium risk": "Moderate Risk",
+    "low risk": "Low Risk",
+    "not found": "Not Found",
 }
 
 
@@ -246,9 +224,12 @@ def _normalize(value: str):
     v = value.lower().strip()
     if v in _VALUE_MAP:
         return _VALUE_MAP[v]
-    if "high"              in v: return "High Risk"
-    if "moderate" in v or "medium" in v: return "Moderate Risk"
-    if "low"               in v: return "Low Risk"
+    if "high" in v:
+        return "High Risk"
+    if "moderate" in v or "medium" in v:
+        return "Moderate Risk"
+    if "low" in v:
+        return "Low Risk"
     return "Not Found"
 
 
