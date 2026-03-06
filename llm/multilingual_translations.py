@@ -1,434 +1,470 @@
-# services/report_chat_service.py
+# llm/multilingual_translations.py
 #
-# Multilingual-aware report chat service.
-# lang param ("en", "hi", "mr", "ta") threads through prompt + fallback.
-
-from llm.generation import generate
-from llm.report_chat_prompt import report_chat_prompt    # ← MOVE THIS UP (before multilingual)
-from llm.multilingual_translations import t, SPEECH_LANG_CODES
-from schemas.chat import ReportChatResponse
-from services.chat_memory import get_session, add_message, get_history, get_report_data
-
-_MAX_HISTORY_TURNS = 6
-_SUPPORTED_LANGS   = set(SPEECH_LANG_CODES.keys())
+# Pure constants file — NO imports from llm/ or services/
+# Provides: t(), SPEECH_LANG_CODES
+# Used by: report_chat_service.py (import this BEFORE report_chat_prompt)
 
 # ══════════════════════════════════════════════════════════════════════════════
-# INTENT KEYWORD SETS — covers English + Hindi + Marathi + Tamil
-# q.lower() is matched against these. Add synonyms freely.
+# SPEECH LANGUAGE CODES  (lang_key → BCP-47 / TTS code)
 # ══════════════════════════════════════════════════════════════════════════════
 
-# ── Pre-purchase intents ──────────────────────────────────────────────────────
-
-_INTENT_RISK = {
-    # English
-    "risk", "biggest", "danger", "concern", "worst", "high risk",
-    "bad clause", "problem", "issue",
-    # Hindi
-    "jokhim", "khatre", "khatarnak", "bura", "nuksaan", "nuksan",
-    "dikkat", "pareshani", "sabse bura", "kyun bura", "kyon bura",
-    "kharab", "buri", "galat",
-    # Marathi
-    "dhoka", "dhokyacha", "vaait", "aapatti", "samashya", "prashn",
-    # Tamil
-    "aapathu", "aabathu", "kettadhu", "mosam", "ketta", "aapam",
+SPEECH_LANG_CODES: dict[str, str] = {
+    "en": "en-IN",
+    "hi": "hi-IN",
+    "mr": "mr-IN",
+    "ta": "ta-IN",
 }
 
-_INTENT_WAITING = {
-    # English
-    "wait", "waiting", "waiting period", "how long", "when covered",
-    "when does", "when will",
-    # Hindi
-    "prateeksha", "intezaar", "kab se", "kitne saal", "kitne din",
-    "kab cover", "kab milega", "wait karna", "wait period",
-    "pratiksha avdhi",
-    # Marathi
-    "thamba", "kiti divas", "kiti varsha", "kelach cover",
-    "pratiksha kalavdhi",
-    # Tamil
-    "kaththiru", "eppodhu", "entha naal", "ezha",
+# ══════════════════════════════════════════════════════════════════════════════
+# TRANSLATION TABLE
+# Keys used by report_chat_service.py fallback functions.
+# Each entry: { "en": "...", "hi": "...", "mr": "...", "ta": "..." }
+# Supports .format(**kwargs) placeholders.
+# ══════════════════════════════════════════════════════════════════════════════
+
+_TRANSLATIONS: dict[str, dict[str, str]] = {
+
+    # ── Pre-purchase: Risk ────────────────────────────────────────────────────
+
+    "risk": {
+        "en": (
+            "High-risk clauses found: {high}. "
+            "Policy score: {score}/100 ({rating}). "
+            "IRDAI compliance: {comply}. "
+            "Negotiate or avoid these clauses before buying."
+        ),
+        "hi": (
+            "High-risk clauses mile: {high}. "
+            "Policy score: {score}/100 ({rating}). "
+            "IRDAI compliance: {comply}. "
+            "Kharidne se pehle in clauses par negotiate karein."
+        ),
+        "mr": (
+            "High-risk clauses aadhaLle: {high}. "
+            "Policy score: {score}/100 ({rating}). "
+            "IRDAI compliance: {comply}. "
+            "Kharidnyapurvee ya clauses var negotiate kara."
+        ),
+        "ta": (
+            "Adhika aapathu clause kaL: {high}. "
+            "Policy score: {score}/100 ({rating}). "
+            "IRDAI iNakkam: {comply}. "
+            "Vangunmunbu intha clause kaLai pEsi mudindhukkoLLungkaL."
+        ),
+    },
+
+    "no_high_risk": {
+        "en": (
+            "No high-risk clauses found. Moderate risks: {mod}. "
+            "Score: {score}/100 ({rating}). Overall a reasonable policy."
+        ),
+        "hi": (
+            "Koi high-risk clause nahi mila. Moderate risks: {mod}. "
+            "Score: {score}/100 ({rating}). Yeh policy kaafi theek hai."
+        ),
+        "mr": (
+            "Konitihi high-risk clause sapadla nahi. Moderate risks: {mod}. "
+            "Score: {score}/100 ({rating}). Hi policy baari theek ahe."
+        ),
+        "ta": (
+            "Adhika aapathu clause illai. Nadutthara aapathu: {mod}. "
+            "Score: {score}/100 ({rating}). Ovvaara policy paravaayillai."
+        ),
+    },
+
+    # ── Pre-purchase: Waiting Period ─────────────────────────────────────────
+
+    "waiting_high": {
+        "en": "Waiting period is HIGH RISK — likely 2–4 years for pre-existing diseases. Accidents are covered immediately.",
+        "hi": "Waiting period HIGH RISK hai — pre-existing diseases ke liye 2–4 saal. Accident turant cover hota hai.",
+        "mr": "Waiting period HIGH RISK ahe — pre-existing sathi 2–4 varsha. Apaghat turant cover hoto.",
+        "ta": "Waiting period ADHIKA AAPATHU — pre-existing noikku 2–4 varudham. Vilappugal edaiyindri cover.",
+    },
+
+    "waiting_moderate": {
+        "en": "Waiting period is MODERATE RISK — typically 1–2 years for specific illnesses. Review the policy document carefully.",
+        "hi": "Waiting period MODERATE RISK — specific bimariyon ke liye 1–2 saal. Policy document dhyan se padhein.",
+        "mr": "Waiting period MODERATE RISK — specific aajaaranvar 1–2 varsha. Policy document kaLjipurvak vaacha.",
+        "ta": "Waiting period NADUTTHARA AAPATHU — kudripittha noikku 1–2 varudham. Policy aavanatthai kavanamaaaka padiyungkaL.",
+    },
+
+    "waiting_low": {
+        "en": "Waiting period is LOW RISK — standard 30-day initial wait, which is normal. Pre-existing disease coverage after 1 year.",
+        "hi": "Waiting period LOW RISK — standard 30 din ki initial wait, jo normal hai.",
+        "mr": "Waiting period LOW RISK — standard 30 divas, jo samannya ahe.",
+        "ta": "Waiting period KURAI AAPATHU — saadharana 30 naal, ithu iyal vazhakku.",
+    },
+
+    "waiting_not_found": {
+        "en": "Waiting period details were not detected in this policy. Ask the insurer for the exact waiting period schedule before buying.",
+        "hi": "Is policy mein waiting period details detect nahi hua. Kharidne se pehle insurer se poochein.",
+        "mr": "Ya policy madhe waiting period sapadla nahi. Kharidnyapurvee insurer la vicharaa.",
+        "ta": "Intha policy il waiting period vilaarath therivikkapadavillai. Vangumunbu insurer kitta ketungkaL.",
+    },
+
+    # ── Pre-purchase: Compliance ──────────────────────────────────────────────
+
+    "compliance": {
+        "en": "IRDAI compliance rating: {comply}. Broker/structural risk: {broker}. A lower compliance rating means higher chance of claim disputes.",
+        "hi": "IRDAI compliance rating: {comply}. Broker risk: {broker}. Kam compliance rating matlab claim mein zyada problem.",
+        "mr": "IRDAI compliance rating: {comply}. Broker risk: {broker}. Kami compliance mhanje claim madhye jaast samashya.",
+        "ta": "IRDAI iNakkam: {comply}. Broker aapathu: {broker}. Kurai iNakkam endral claim vil jaasta siramam.",
+    },
+
+    # ── Pre-purchase: Buy decision ────────────────────────────────────────────
+
+    "buy_strong": {
+        "en": "Score {score}/100 ({rating}) — Strong policy. Broker risk: {broker}. Generally recommended, but always read the fine print.",
+        "hi": "Score {score}/100 ({rating}) — Mazboot policy. Broker risk: {broker}. Generally recommend ki jaati hai.",
+        "mr": "Score {score}/100 ({rating}) — Changle policy. Broker risk: {broker}. Sadhaaranpane shifiaarash keleli.",
+        "ta": "Score {score}/100 ({rating}) — Valimaiyaana policy. Broker aapathu: {broker}. Podhuvaan paravaayillai.",
+    },
+
+    "buy_moderate": {
+        "en": "Score {score}/100 ({rating}) — Average policy. Broker risk: {broker}. Negotiate high-risk clauses before signing.",
+        "hi": "Score {score}/100 ({rating}) — Average policy. Broker risk: {broker}. Sign karne se pehle high-risk clauses par negotiate karein.",
+        "mr": "Score {score}/100 ({rating}) — Saadhaaran policy. Broker risk: {broker}. Sign karayapurvee high-risk clauses sathi negotiate kara.",
+        "ta": "Score {score}/100 ({rating}) — Saadharana policy. Broker aapathu: {broker}. Kainnamaadumunbu high-risk clause pEsungkaL.",
+    },
+
+    "buy_weak": {
+        "en": "Score {score}/100 ({rating}) — Weak policy. Broker risk: {broker}. Not recommended — consider alternatives before buying.",
+        "hi": "Score {score}/100 ({rating}) — Kamzor policy. Broker risk: {broker}. Recommend nahi — doosre options dekhein.",
+        "mr": "Score {score}/100 ({rating}) — Kamkuvat policy. Broker risk: {broker}. Shifiaarash nahi — paryaay shoda.",
+        "ta": "Score {score}/100 ({rating}) — Valiyatra policy. Broker aapathu: {broker}. Paravaayillai illai — marru option paarkungkaL.",
+    },
+
+    # ── Pre-purchase: Negotiate ───────────────────────────────────────────────
+
+    "negotiate_none": {
+        "en": "No high-risk clauses found to negotiate. The policy looks structurally sound.",
+        "hi": "Negotiate karne ke liye koi high-risk clause nahi mila. Policy theek lagti hai.",
+        "mr": "Negotiate karnyasathi konitihi high-risk clause sapadla nahi. Policy saaMgalyavar theek ahe.",
+        "ta": "Pesi mudivu seiya adhika aapathu clause illai. Policy nallaa therikindradhu.",
+    },
+
+    "negotiate_high": {
+        "en": "Before buying, ask the insurer to clarify or waive: {high}. Get any changes in writing.",
+        "hi": "Kharidne se pehle insurer se in clauses par clarify karein: {high}. Koi bhi badlaav writing mein lein.",
+        "mr": "Kharidnyapurvee insurer kade ya clauses baddal vicharaa: {high}. Konitihi badal lekhi swaroopaant ghya.",
+        "ta": "Vangumunbu insurer kitta intha clause kaLai theeLppaduththungkaL: {high}. Yedhuvum maatramum ezhutthil vaangungkaL.",
+    },
+
+    # ── Pre-purchase: Not Found / Missing ─────────────────────────────────────
+
+    "all_found": {
+        "en": "All standard clauses were detected in this policy. No missing sections found.",
+        "hi": "Is policy mein sabhi standard clauses detect hue. Koi missing section nahi mila.",
+        "mr": "Ya policy madhe sarva samannya clauses sapadlle. Konitihi missing section sapadla nahi.",
+        "ta": "Intha policy il ellaa saadharana clause kaLum kandupidikkapaddu. Yaarum kutRaiyillai.",
+    },
+
+    "not_found_missing": {
+        "en": "These clauses were not detected: {missing}. Ask the insurer specifically about these before buying.",
+        "hi": "Ye clauses detect nahi hue: {missing}. Kharidne se pehle insurer se specifically poochein.",
+        "mr": "He clauses sapadlle nahi: {missing}. Kharidnyapurvee insurer la specifically vicharaa.",
+        "ta": "Intha clause kaL kandupidikkapadavillai: {missing}. Vangumunbu insurer kitta kudrippittu ketungkaL.",
+    },
+
+    # ── Pre-purchase: Generic fallback ────────────────────────────────────────
+
+    "generic": {
+        "en": (
+            "Policy score: {score}/100 ({rating}). "
+            "High-risk areas: {high}. "
+            "IRDAI compliance: {comply}. "
+            "Broker risk: {broker}. "
+            "Ask me about risks, waiting period, compliance, or whether to buy."
+        ),
+        "hi": (
+            "Policy score: {score}/100 ({rating}). "
+            "High-risk areas: {high}. "
+            "IRDAI compliance: {comply}. "
+            "Broker risk: {broker}. "
+            "Risk, waiting period, compliance ya kharidne ke baare mein poochein."
+        ),
+        "mr": (
+            "Policy score: {score}/100 ({rating}). "
+            "High-risk areas: {high}. "
+            "IRDAI compliance: {comply}. "
+            "Broker risk: {broker}. "
+            "Risk, waiting period, compliance kinva kharidnyabaddal vicharaa."
+        ),
+        "ta": (
+            "Policy score: {score}/100 ({rating}). "
+            "Adhika aapathu: {high}. "
+            "IRDAI iNakkam: {comply}. "
+            "Broker aapathu: {broker}. "
+            "Aapathu, waiting period, iNakkam pathi ketungkaL."
+        ),
+    },
+
+    # ── Audit: Appeal strength ────────────────────────────────────────────────
+
+    "appeal_strong": {
+        "en": "Appeal strength: {label} ({pct}%). {reasoning} — Strong chance of success. File immediately.",
+        "hi": "Appeal strength: {label} ({pct}%). {reasoning} — Jeetne ki acchi umeed. Turant file karein.",
+        "mr": "Appeal strength: {label} ({pct}%). {reasoning} — Yash milnyachi changle shaktata. Laagalach file kara.",
+        "ta": "Appeal valimai: {label} ({pct}%). {reasoning} — Vetri kittum vaaippu nannaa uLLadhu. Udanae file seyyungkaL.",
+    },
+
+    "appeal_moderate": {
+        "en": "Appeal strength: {label} ({pct}%). {reasoning} — Moderate chance. Strengthen your evidence before filing.",
+        "hi": "Appeal strength: {label} ({pct}%). {reasoning} — Moderate chance. File karne se pehle evidence mazboot karein.",
+        "mr": "Appeal strength: {label} ({pct}%). {reasoning} — Moderate chance. File karayapurvee evidence mazboot kara.",
+        "ta": "Appeal valimai: {label} ({pct}%). {reasoning} — Nadutthara vaaippu. File seyyumunbu saatchi valimai seyyungkaL.",
+    },
+
+    "appeal_weak": {
+        "en": "Appeal strength: {label} ({pct}%). {reasoning} — Low chance currently. Gather more evidence before appealing.",
+        "hi": "Appeal strength: {label} ({pct}%). {reasoning} — Abhi kam chance. Appeal karne se pehle aur evidence ikathe karein.",
+        "mr": "Appeal strength: {label} ({pct}%). {reasoning} — Kam chance. Appeal karayapurvee jaast evidence gola kara.",
+        "ta": "Appeal valimai: {label} ({pct}%). {reasoning} — Ippodhaikku kurai vaaippu. Muttrumunapu jaasta saatchi seRuungkaL.",
+    },
+
+    # ── Audit: Overturn / Evidence ────────────────────────────────────────────
+
+    "overturn": {
+        "en": "To strengthen your case, address these weak points: {weak}. Gather discharge summaries, doctor letters, and payment receipts.",
+        "hi": "Case mazboot karne ke liye in weak points par dhyan dein: {weak}. Discharge summary, doctor letter aur receipts ikathe karein.",
+        "mr": "Case mazboot karnyasathi ya weak points war lakssh dya: {weak}. Discharge summary, doctor patra aani receipts gola kara.",
+        "ta": "Ungal vazhakkai valimaipaduththa intha kuraipaattukaLai tiruththungkaL: {weak}. Discharge summary, doctor kaitham, receipts seRuungkaL.",
+    },
+
+    # ── Audit: Moratorium ─────────────────────────────────────────────────────
+
+    "moratorium": {
+        "en": (
+            "Under IRDAI's 8-year moratorium rule: after 8 continuous years of coverage, "
+            "NO claim can be rejected for pre-existing disease — even if undisclosed at purchase. "
+            "This applies to all health insurance policies in India."
+        ),
+        "hi": (
+            "IRDAI ke 8-saal moratorium niyam ke anusar: 8 saal lagaataar policy rakhne ke baad, "
+            "koi bhi claim pre-existing disease ke naam par reject nahi ho sakta — "
+            "chahe kharidne ke waqt bataya na ho."
+        ),
+        "mr": (
+            "IRDAI chya 8-varsha moratorium niyamanusaar: 8 varsha satat coverage nantara, "
+            "konitihi claim pre-existing disease saathe nakarau shakat nahi — "
+            "jaari kharidtana saangitle nasale tari."
+        ),
+        "ta": (
+            "IRDAI in 8-varudham moratorium vidhipadi: 8 thodarmaana aaNdugaL coverage pirivu, "
+            "pre-existing noi karanamaaaga yaarum claim maRukka mudiyaadhu — "
+            "vaangiyapodhudhu sollaavidum paattu."
+        ),
+    },
+
+    # ── Audit: Next Steps ─────────────────────────────────────────────────────
+
+    "next_steps_dynamic": {
+        "en": "Recommended next steps: {steps}",
+        "hi": "Suggested next steps: {steps}",
+        "mr": "Suchavlele pudhaache kadam: {steps}",
+        "ta": "Aduththa padikaL: {steps}",
+    },
+
+    "next_steps_generic": {
+        "en": (
+            "Next steps after a claim rejection:\n"
+            "1. File written complaint with insurer's GRO within 15 days.\n"
+            "2. If unresolved, escalate to IRDAI IGMS (igms.irda.gov.in).\n"
+            "3. Approach Insurance Ombudsman within 1 year (cioins.co.in).\n"
+            "4. Consumer Court as last resort."
+        ),
+        "hi": (
+            "Claim reject hone ke baad agle kadam:\n"
+            "1. 15 din mein GRO ko written complaint.\n"
+            "2. Resolve na ho to IRDAI IGMS (igms.irda.gov.in).\n"
+            "3. 1 saal mein Insurance Ombudsman (cioins.co.in).\n"
+            "4. Consumer Court antim vikalp."
+        ),
+        "mr": (
+            "Claim nakaral'yanantara pudhaache kadam:\n"
+            "1. 15 divsat GRO la written takraar.\n"
+            "2. Resolve na jhaal tar IRDAI IGMS (igms.irda.gov.in).\n"
+            "3. 1 varshaat Insurance Ombudsman (cioins.co.in).\n"
+            "4. Consumer Court shaevtacha upaaY."
+        ),
+        "ta": (
+            "Claim maRukkappattapodhudhu aduththa padikaL:\n"
+            "1. 15 naaLukkuL GRO kitta ezhuthu pulaampudhal.\n"
+            "2. Thiruvaadha endral IRDAI IGMS (igms.irda.gov.in).\n"
+            "3. 1 varudhatthil Insurance Ombudsman (cioins.co.in).\n"
+            "4. Consumer Court kadaisi vazhi."
+        ),
+    },
+
+    # ── Audit: Ombudsman ──────────────────────────────────────────────────────
+
+    "ombudsman": {
+        "en": (
+            "Insurance Ombudsman: Free, binding for claims up to ₹50 lakhs. "
+            "Must file within 1 year of rejection. "
+            "Find your nearest office at cioins.co.in. "
+            "No lawyer needed."
+        ),
+        "hi": (
+            "Insurance Ombudsman: ₹50 lakh tak ke claims ke liye free aur binding. "
+            "Rejection ke 1 saal ke andar file karein. "
+            "cioins.co.in par nzdiki office dhundhein."
+        ),
+        "mr": (
+            "Insurance Ombudsman: ₹50 lakh paryantachya claims sathi free aur binding. "
+            "Nakaral'yanantara 1 varshaat file kara. "
+            "cioins.co.in var nzdiche office shoda."
+        ),
+        "ta": (
+            "Insurance Ombudsman: ₹50 latcham varai ilaiyadhu, kattupaadaana. "
+            "Maruthal piragu 1 varudhatthil file seyyungkaL. "
+            "cioins.co.in il aduththa aluvalakam kaaNungkaL."
+        ),
+    },
+
+    # ── Audit: Documents ──────────────────────────────────────────────────────
+
+    "documents": {
+        "en": (
+            "Documents typically needed for a claim appeal:\n"
+            "• Original rejection letter from insurer\n"
+            "• Hospital discharge summary\n"
+            "• All original bills and payment receipts\n"
+            "• Doctor's certificate with diagnosis\n"
+            "• Policy document copy\n"
+            "• Any pre-authorization correspondence"
+        ),
+        "hi": (
+            "Claim appeal ke liye aam tor par zaroori documents:\n"
+            "• Insurer ka original rejection letter\n"
+            "• Hospital discharge summary\n"
+            "• Sabhi original bills aur receipts\n"
+            "• Doctor ka diagnosis certificate\n"
+            "• Policy document ki copy\n"
+            "• Pre-authorization patra"
+        ),
+        "mr": (
+            "Claim appeal sathi sadhaaranpane laaganaare documents:\n"
+            "• Insurer cha original rejection letter\n"
+            "• Hospital discharge summary\n"
+            "• Sarva original bills aani receipts\n"
+            "• Doctor cha diagnosis certificate\n"
+            "• Policy document chi copy"
+        ),
+        "ta": (
+            "Claim appeal seivatharku podhuvaan thaevaipadum aavanangkaL:\n"
+            "• Insurer in original maRuppu kaitham\n"
+            "• Hospital discharge summary\n"
+            "• Aarikkai bills maRRum receipts\n"
+            "• Doctor diagnosis sartipiket\n"
+            "• Policy aavana nakal"
+        ),
+    },
+
+    # ── Audit: Clause / Rejection reason ─────────────────────────────────────
+
+    "clause_challengeable": {
+        "en": (
+            "Rejection reason: {why}. Clause detected: {clause}. "
+            "Clause alignment: {alignment} — this clause may be challengeable. "
+            "Consider filing an appeal with supporting medical evidence."
+        ),
+        "hi": (
+            "Rejection reason: {why}. Clause: {clause}. "
+            "Alignment: {alignment} — yeh clause challenge kiya ja sakta hai. "
+            "Supporting medical evidence ke saath appeal file karein."
+        ),
+        "mr": (
+            "Rejection kaaran: {why}. Clause: {clause}. "
+            "Alignment: {alignment} — ha clause challenge karu shaktao. "
+            "Medical evidence saathe appeal file kara."
+        ),
+        "ta": (
+            "Maruthal karanam: {why}. Clause: {clause}. "
+            "Clause iNakkam: {alignment} — intha clause-ai savalippikka mudiyum. "
+            "Medical saatchi udaiya appeal file seyyungkaL."
+        ),
+    },
+
+    "clause_firm": {
+        "en": (
+            "Rejection reason: {why}. Clause detected: {clause}. "
+            "Clause alignment: {alignment} — the insurer's position appears strong. "
+            "Seek a second legal opinion before deciding to appeal."
+        ),
+        "hi": (
+            "Rejection reason: {why}. Clause: {clause}. "
+            "Alignment: {alignment} — insurer ki position mazboot lagti hai. "
+            "Appeal karne se pehle legal opinion lein."
+        ),
+        "mr": (
+            "Rejection kaaran: {why}. Clause: {clause}. "
+            "Alignment: {alignment} — insurer chi position mazboot ahe. "
+            "Appeal karayapurvee legal opinion ghya."
+        ),
+        "ta": (
+            "Maruthal karanam: {why}. Clause: {clause}. "
+            "Clause iNakkam: {alignment} — insurer nillai valimaiyaanadu. "
+            "Appeal seyyumunbu saadha legal katturai vaangungkaL."
+        ),
+    },
+
+    # ── Audit: Generic fallback ───────────────────────────────────────────────
+    # Note: "generic" key is reused — audit version has different placeholders.
+    # report_chat_service.py calls t("generic", lang, ...) with audit kwargs when
+    # in audit mode. We use a separate key to avoid collision.
+
+    "audit_generic": {
+        "en": (
+            "Rejection reason: {why}. Clause: {clause}. "
+            "Alignment: {alignment}. Appeal: {label} ({pct}%). "
+            "Strong points: {strong}. Weak points: {weak}."
+        ),
+        "hi": (
+            "Rejection reason: {why}. Clause: {clause}. "
+            "Alignment: {alignment}. Appeal: {label} ({pct}%). "
+            "Strong points: {strong}. Weak points: {weak}."
+        ),
+        "mr": (
+            "Rejection kaaran: {why}. Clause: {clause}. "
+            "Alignment: {alignment}. Appeal: {label} ({pct}%). "
+            "Strong: {strong}. Weak: {weak}."
+        ),
+        "ta": (
+            "Maruthal karanam: {why}. Clause: {clause}. "
+            "Inaippidanam: {alignment}. Appeal: {label} ({pct}%). "
+            "Valimaikaaram: {strong}. Kuraipaadu: {weak}."
+        ),
+    },
+
 }
-
-_INTENT_COMPLIANCE = {
-    # English
-    "compliance", "irdai", "regulatory", "regulation", "rules", "standard",
-    # Hindi
-    "niyam", "niyamak", "sarkar", "kanoon", "adhikar", "irdai niyam",
-    "irdai ka", "sarkari",
-    # Marathi
-    "niyam", "niyamak", "kanoon", "irdai niyam",
-    # Tamil
-    "vidhimurai", "murayeedu", "sarkar", "irdai vidhigal", "irdai",
-}
-
-_INTENT_BUY = {
-    # English
-    "buy", "should i", "purchase", "recommend", "worth", "take this",
-    "is it good", "good policy", "is this good",
-    # Hindi
-    "kharidun", "kharidu", "khareedun", "lena chahiye", "lena chahie",
-    "achchi hai", "acchi hai", "theek hai", "le lun", "kya lu",
-    "kya lena", "kharidna", "kya sahi hai", "lena chahiye kya",
-    "kharidni chahiye", "sahi hai kya", "kharidna chahiye",
-    # Marathi
-    "kharedi", "ghyave ka", "ghyava ka", "changle ahe", "vikat ghyave",
-    "ghene", "ghenare ka",
-    # Tamil
-    "vanganuma", "vaangalama", "nalladha", "edukkalama", "vanga",
-}
-
-_INTENT_NEGOTIATE = {
-    # English
-    "negotiate", "before buying", "which clause", "ask", "clarify", "check",
-    "question insurer", "what to ask",
-    # Hindi
-    "pucho", "puchna", "kya puchun", "kaun sa", "seedha puchho",
-    "pahle", "kya check karu", "negotiate karo", "puchtaach",
-    # Marathi
-    "vicharaa", "kaay vicharave", "aadhi", "check kara", "vicharne",
-    # Tamil
-    "kelunga", "kaanal", "yaendru kelunga", "ketka",
-}
-
-_INTENT_NOT_FOUND = {
-    # English
-    "not found", "missing", "not detected", "not shown", "cant find",
-    # Hindi
-    "nahi mila", "nahi dikh raha", "nahi hai", "detect nahi",
-    "nahi dikh", "kahan hai",
-    # Marathi
-    "sapadla nahi", "disle nahi", "nahi sapadla",
-    # Tamil
-    "kandupidikkavillai", "illai", "theriyavillai",
-}
-
-# ── Audit intents ─────────────────────────────────────────────────────────────
-
-_INTENT_APPEAL = {
-    # English
-    "strong", "chance", "appeal", "how strong", "direction", "winning",
-    "appeal strength", "appeal direction",
-    # Hindi
-    "kitni", "appeal karo", "mazbut", "mazboot", "jeetne ki",
-    "appeal kitni", "appeal strong", "appeal weak", "appeal direction",
-    "appeal ki taakat", "appeal ka",
-    # Marathi
-    "appeal", "kitpat", "mazboot", "appeal direction", "appeal chi",
-    # Tamil
-    "appeal", "valimaiyana", "vaaippu", "appeal strength",
-}
-
-_INTENT_OVERTURN = {
-    # English
-    "overturn", "evidence", "reverse", "strengthen", "what could help",
-    "how to win", "what proof",
-    # Hindi
-    "palat", "badal", "kaise jeeten", "kya kare", "saboot",
-    "evidence kya", "kya laun", "strengthen karo", "ulta karo",
-    # Marathi
-    "ulat", "badal", "kase jeenkave", "puraava", "saboot",
-    # Tamil
-    "marru", "thirumbu", "saatchi", "evidence", "thirumpa",
-}
-
-_INTENT_MORATORIUM = {
-    # English
-    "moratorium", "8 year", "8-year", "eight year", "8 years",
-    # Hindi
-    "moratorium", "8 saal", "aath saal", "8 varsh", "aath varsh",
-    # Marathi
-    "moratorium", "8 varsha", "aath varsha",
-    # Tamil
-    "moratorium", "8 varudham", "ettaandu",
-}
-
-_INTENT_NEXT_STEPS = {
-    # English
-    "next step", "what should", "what do i", "how do i", "what now",
-    "what next", "steps",
-    # Hindi
-    "kya karu", "aage kya", "next step", "kya karna", "ab kya",
-    "kya karna chahiye", "agle kadam", "kya karun",
-    # Marathi
-    "pudhe kay", "aata kay", "kaye karave", "pudha kadam",
-    # Tamil
-    "enna seiya", "epdi seiya", "munnetrm", "enna pannanum",
-}
-
-_INTENT_OMBUDSMAN = {
-    # English
-    "ombudsman", "escalat", "igms", "complain", "grievance", "gro",
-    # Hindi
-    "shikayat", "takraar", "ombudsman", "igms", "escalate karo",
-    "fariyaad", "complaint",
-    # Marathi
-    "takraar", "ombudsman", "igms", "tक्रार",
-    # Tamil
-    "manauvinaippu", "ombudsman", "igms", "pulaampudhal",
-}
-
-_INTENT_DOCUMENTS = {
-    # English
-    "document", "need", "bring", "submit", "what papers", "paperwork",
-    # Hindi
-    "dastavez", "kagaz", "kya laana", "kya chahiye", "submit karna",
-    "kaagaz", "documents chahiye",
-    # Marathi
-    "kagadpatra", "kaye lavave", "submit kara", "kagad",
-    # Tamil
-    "aavaNam", "enna kotukkanam", "papers", "documents",
-}
-
-_INTENT_CLAUSE = {
-    # English
-    "clause", "exclusion", "why", "reason", "what clause", "rejected because",
-    # Hindi
-    "kyun", "kyon", "kaaran", "clause", "kya likha", "kya hai",
-    "atka raha", "rok raha", "kyun atka", "kyon roka", "kyu",
-    "kyu atka", "kyon atka",
-    # Marathi
-    "ka", "kaarana", "clause", "kaya lihalay", "kaa nakarale",
-    # Tamil
-    "yen", "karanam", "clause", "enna vithi", "yean",
-}
-
-
-def _matches(q: str, intent_set: set) -> bool:
-    """True if any keyword from intent_set is a substring of q."""
-    return any(kw in q for kw in intent_set)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# MAIN SERVICE FUNCTION
+# PUBLIC API
 # ══════════════════════════════════════════════════════════════════════════════
 
-def run_report_chat(
-    model,
-    tokenizer,
-    user_question: str,
-    session_id: str | None = None,
-    report_data: dict | None = None,
-    lang: str = "en",
-) -> ReportChatResponse:
+def t(key: str, lang: str = "en", **kwargs) -> str:
     """
-    One-shot  (/report-chat): pass report_data + user_question + lang
-    Session   (/chat):        pass session_id + user_question + lang
+    Translate a message key into the requested language and format with kwargs.
 
-    lang: "en" | "hi" | "mr" | "ta"  (falls back to "en" if unsupported)
+    Usage:
+        t("risk", "hi", high="room rent", score=55, rating="Average", comply="Partial")
+
+    Falls back to "en" if lang not found, or returns the key itself as last resort.
     """
+    entry = _TRANSLATIONS.get(key)
+    if entry is None:
+        # Unknown key — return a safe placeholder
+        return f"[{key}]"
 
-    lang = lang if lang in _SUPPORTED_LANGS else "en"
+    template = entry.get(lang) or entry.get("en", f"[{key}]")
 
-    # ── Resolve report data and history ──────────────────────────────────────
-    if session_id:
-        session = get_session(session_id)
-        if not session:
-            return ReportChatResponse(
-                answer=_session_not_found_msg(lang),
-            )
-        report_data = get_report_data(session_id)
-        history     = get_history(session_id, max_turns=_MAX_HISTORY_TURNS)
-    else:
-        if not report_data:
-            return ReportChatResponse(answer=_no_report_msg(lang))
-        history = []
+    if kwargs:
+        try:
+            return template.format(**kwargs)
+        except KeyError:
+            # Return unformatted template rather than crash
+            return template
 
-    if not report_data:
-        return ReportChatResponse(answer=_no_report_msg(lang))
-
-    # ── Build multilingual prompt ─────────────────────────────────────────────
-    prompt = report_chat_prompt(report_data, history, user_question, lang=lang)
-
-    # ── Generate ──────────────────────────────────────────────────────────────
-    raw = generate(
-        prompt,
-        model,
-        tokenizer,
-        max_new_tokens=450,
-        json_mode=False,
-        temperature=0.35,
-    )
-
-    answer = raw.strip() if raw and raw.strip() else ""
-
-    # Strip model prefix artifacts
-    for prefix in ("Answer:", "ANSWER:", "Assistant:", "ASSISTANT:", "ANSWER:\n"):
-        if answer.startswith(prefix):
-            answer = answer[len(prefix):].strip()
-            break
-
-    # Strip any prompt echo
-    for marker in ("USER QUESTION:", "CONVERSATION HISTORY:", "REPORT TYPE:", "REPORT DATA:"):
-        idx = answer.find(marker)
-        if idx > 20:
-            answer = answer[:idx].strip()
-
-    # ── Fallback if LLM returned nothing meaningful ───────────────────────────
-    # Threshold lowered to 8 — short valid answers in Hindi/Tamil can be <15 chars
-    if len(answer) < 8:
-        print(f"⚠ LLM answer too short ({len(answer)}) — deterministic fallback")
-        answer = _build_fallback_answer(user_question, report_data, lang)
-
-    # ── Persist to session ────────────────────────────────────────────────────
-    if session_id:
-        add_message(session_id, "user",      user_question)
-        add_message(session_id, "assistant", answer)
-
-    sources = _extract_sources(answer, report_data)
-
-    return ReportChatResponse(
-        answer=answer,
-        session_id=session_id,
-        sources=sources,
-    )
-
-
-# ══════════════════════════════════════════════════════════════════════════════
-# MULTILINGUAL FALLBACK ANSWERS
-# ══════════════════════════════════════════════════════════════════════════════
-
-def _build_fallback_answer(question: str, report: dict, lang: str = "en") -> str:
-    q = question.lower()
-    is_prepurchase = "clause_risk" in report and "appeal_strength" not in report
-    return _prepurchase_fallback(q, report, lang) if is_prepurchase else _audit_fallback(q, report, lang)
-
-
-def _prepurchase_fallback(q: str, report: dict, lang: str) -> str:
-    score     = round(float(report.get("score_breakdown", {}).get("adjusted_score", 0)))
-    rating    = report.get("overall_policy_rating", "Unknown")
-    risk      = report.get("clause_risk", {})
-    high      = [k.replace("_", " ") for k, v in risk.items() if v == "High Risk"]
-    mod       = [k.replace("_", " ") for k, v in risk.items() if v == "Moderate Risk"]
-    comply    = report.get("irdai_compliance", {}).get("compliance_rating", "Unknown")
-    broker    = report.get("broker_risk_analysis", {}).get("structural_risk_level", "Unknown")
-    checklist = report.get("checklist_for_buyer", [])
-
-    if _matches(q, _INTENT_RISK):
-        if not high:
-            return t("no_high_risk", lang, mod=", ".join(mod[:3]) or "none",
-                     score=score, rating=rating)
-        return t("risk", lang, high=", ".join(high[:4]), score=score,
-                 rating=rating, comply=comply)
-
-    if _matches(q, _INTENT_WAITING):
-        wv = risk.get("waiting_period", "Not Found")
-        key_map = {
-            "High Risk":     "waiting_high",
-            "Moderate Risk": "waiting_moderate",
-            "Low Risk":      "waiting_low",
-            "Not Found":     "waiting_not_found",
-        }
-        return t(key_map.get(wv, "waiting_not_found"), lang)
-
-    if _matches(q, _INTENT_COMPLIANCE):
-        return t("compliance", lang, comply=comply, broker=broker)
-
-    if _matches(q, _INTENT_BUY):
-        key = "buy_strong" if score >= 72 else "buy_moderate" if score >= 48 else "buy_weak"
-        return t(key, lang, score=score, rating=rating, broker=broker)
-
-    if _matches(q, _INTENT_NEGOTIATE):
-        if not high:
-            return t("negotiate_none", lang)
-        return t("negotiate_high", lang, high=", ".join(high[:3]))
-
-    if _matches(q, _INTENT_NOT_FOUND):
-        missing = [k.replace("_", " ") for k, v in risk.items() if v == "Not Found"]
-        if not missing:
-            return t("all_found", lang)
-        return t("not_found_missing", lang, missing=", ".join(missing))
-
-    # Generic — includes full context even as fallback
-    return t("generic", lang, score=score, rating=rating,
-             high=", ".join(high) or "none", comply=comply, broker=broker)
-
-
-def _audit_fallback(q: str, report: dict, lang: str) -> str:
-    appeal    = report.get("appeal_strength", {})
-    pct       = appeal.get("percentage", 0)
-    label     = appeal.get("label", "Unknown")
-    reasoning = appeal.get("reasoning", "")
-    why       = report.get("why_rejected", "not specified")
-    clause    = report.get("policy_clause_detected", "not identified")
-    alignment = report.get("clause_alignment", "Unknown")
-    weak      = report.get("weak_points", [])
-    strong    = report.get("strong_points", [])
-    steps     = report.get("reapplication_steps", [])
-
-    if _matches(q, _INTENT_APPEAL):
-        key = "appeal_strong" if pct >= 70 else "appeal_moderate" if pct >= 40 else "appeal_weak"
-        return t(key, lang, label=label, pct=pct, reasoning=reasoning)
-
-    if _matches(q, _INTENT_OVERTURN):
-        wk = "; ".join(weak[:2]) or "documentation gaps"
-        return t("overturn", lang, weak=wk)
-
-    if _matches(q, _INTENT_MORATORIUM):
-        return t("moratorium", lang)
-
-    if _matches(q, _INTENT_NEXT_STEPS):
-        if steps:
-            steps_str = " ".join(f"{i+1}. {s}" for i, s in enumerate(steps[:3]))
-            return t("next_steps_dynamic", lang, steps=steps_str)
-        return t("next_steps_generic", lang)
-
-    if _matches(q, _INTENT_OMBUDSMAN):
-        return t("ombudsman", lang)
-
-    if _matches(q, _INTENT_DOCUMENTS):
-        return t("documents", lang)
-
-    if _matches(q, _INTENT_CLAUSE):
-        challengeable = alignment in ("Weak", "Not Detected")
-        key = "clause_challengeable" if challengeable else "clause_firm"
-        return t(key, lang, clause=clause, why=why, alignment=alignment)
-
-    st = "; ".join(strong[:2]) or "none identified"
-    wk = "; ".join(weak[:2]) or "none identified"
-    return t("generic", lang, why=why, clause=clause, alignment=alignment,
-             label=label, pct=pct, strong=st, weak=wk)
-
-
-# ── System messages ───────────────────────────────────────────────────────────
-
-def _session_not_found_msg(lang: str) -> str:
-    msgs = {
-        "en": "Session not found or expired. Please start a new chat.",
-        "hi": "सत्र नहीं मिला या समाप्त हो गया। कृपया नई चैट शुरू करें।",
-        "mr": "सत्र सापडले नाही किंवा कालबाह्य झाले. कृपया नवीन चॅट सुरू करा.",
-        "ta": "அமர்வு கண்டறியப்படவில்லை அல்லது காலாவதியானது. புதிய அரட்டையை தொடங்கவும்.",
-    }
-    return msgs.get(lang, msgs["en"])
-
-
-def _no_report_msg(lang: str) -> str:
-    msgs = {
-        "en": "No report data provided.",
-        "hi": "कोई रिपोर्ट डेटा प्रदान नहीं किया गया।",
-        "mr": "कोणताही अहवाल डेटा प्रदान केला नाही.",
-        "ta": "எந்த அறிக்கை தரவும் வழங்கப்படவில்லை.",
-    }
-    return msgs.get(lang, msgs["en"])
-
-
-def _extract_sources(text: str, report_data: dict) -> list[str]:
-    """Extract IRDAI regulatory references mentioned in the answer."""
-    refs  = []
-    lower = text.lower()
-    checks = [
-        ("moratorium",     "IRDAI 8-Year Moratorium Rule"),
-        ("irdai",          "IRDAI Policyholders' Protection Regulations 2017"),
-        ("ombudsman",      "Insurance Ombudsman Rules 2017"),
-        ("free look",      "IRDAI Free Look Period Mandate"),
-        ("waiting period", "IRDAI Waiting Period Regulations"),
-        ("pre-existing",   "IRDAI Pre-existing Disease Definition"),
-        ("igms",           "IRDAI IGMS Grievance Portal"),
-        ("co-pay",         "IRDAI Co-payment Regulation"),
-        ("restoration",    "IRDAI Sum Insured Restoration Guidelines"),
-        ("consumer",       "Consumer Protection Act 2019"),
-    ]
-    for keyword, label in checks:
-        if keyword in lower and label not in refs:
-            refs.append(label)
-        if len(refs) >= 3:
-            break
-    return refs
+    return template
