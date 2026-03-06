@@ -479,3 +479,181 @@ def t(key: str, lang: str = "en", **kwargs) -> str:
             return template
 
     return template
+
+    _TRANSLATIONS: dict[str, dict[str, str]] = {
+    "risk": {
+        "en": "High-risk clauses found: {high}. Policy score: {score}/100 ({rating}). IRDAI compliance: {comply}. Negotiate or avoid these clauses before buying.",
+        "hi": "High-risk clauses mile: {high}. Policy score: {score}/100 ({rating}). IRDAI compliance: {comply}. Kharidne se pehle in clauses par negotiate karein.",
+        "mr": "High-risk clauses aadhaLle: {high}. Policy score: {score}/100 ({rating}). IRDAI compliance: {comply}. Kharidnyapurvee ya clauses var negotiate kara.",
+        "ta": "Adhika aapathu clause kaL: {high}. Policy score: {score}/100 ({rating}). IRDAI iNakkam: {comply}. Vangunmunbu pEsi mudindhukkoLLungkaL.",
+    },
+    "no_high_risk": {
+        "en": "No high-risk clauses found. Moderate risks: {mod}. Score: {score}/100 ({rating}). Overall a reasonable policy.",
+        "hi": "Koi high-risk clause nahi mila. Moderate risks: {mod}. Score: {score}/100 ({rating}).",
+        "mr": "Konitihi high-risk clause sapadla nahi. Moderate risks: {mod}. Score: {score}/100 ({rating}).",
+        "ta": "Adhika aapathu clause illai. Nadutthara aapathu: {mod}. Score: {score}/100 ({rating}).",
+    },
+    "waiting_high": {
+        "en": "Waiting period is HIGH RISK — likely 2–4 years for pre-existing diseases. Accidents are covered immediately.",
+        "hi": "Waiting period HIGH RISK hai — pre-existing diseases ke liye 2–4 saal. Accident turant cover hota hai.",
+        "mr": "Waiting period HIGH RISK ahe — pre-existing sathi 2–4 varsha. Apaghat turant cover hoto.",
+        "ta": "Waiting period ADHIKA AAPATHU — pre-existing noikku 2–4 varudham. Vilappugal edaiyindri cover.",
+    },
+    "waiting_moderate": {
+        "en": "Waiting period is MODERATE RISK — typically 1–2 years for specific illnesses. Review the policy document carefully.",
+        "hi": "Waiting period MODERATE RISK — specific bimariyon ke liye 1–2 saal. Policy document dhyan se padhein.",
+        "mr": "Waiting period MODERATE RISK — specific aajaaranvar 1–2 varsha. Policy document kaLjipurvak vaacha.",
+        "ta": "Waiting period NADUTTHARA AAPATHU — kudripittha noikku 1–2 varudham.",
+    },
+    "waiting_low": {
+        "en": "Waiting period is LOW RISK — standard 30-day initial wait. Pre-existing disease coverage after 1 year.",
+        "hi": "Waiting period LOW RISK — standard 30 din ki initial wait, jo normal hai.",
+        "mr": "Waiting period LOW RISK — standard 30 divas, jo samannya ahe.",
+        "ta": "Waiting period KURAI AAPATHU — saadharana 30 naal, ithu iyal vazhakku.",
+    },
+    "waiting_not_found": {
+        "en": "Waiting period details were not detected. Ask the insurer for the exact waiting period schedule before buying.",
+        "hi": "Waiting period details detect nahi hua. Kharidne se pehle insurer se poochein.",
+        "mr": "Waiting period sapadla nahi. Kharidnyapurvee insurer la vicharaa.",
+        "ta": "Waiting period kandupidikkapadavillai. Vangumunbu insurer kitta ketungkaL.",
+    },
+    "compliance": {
+        "en": "IRDAI compliance rating: {comply}. Broker/structural risk: {broker}. Lower compliance means higher chance of claim disputes.",
+        "hi": "IRDAI compliance rating: {comply}. Broker risk: {broker}. Kam compliance matlab claim mein zyada problem.",
+        "mr": "IRDAI compliance rating: {comply}. Broker risk: {broker}. Kami compliance mhanje claim madhye jaast samashya.",
+        "ta": "IRDAI iNakkam: {comply}. Broker aapathu: {broker}. Kurai iNakkam endral claim vil jaasta siramam.",
+    },
+    "buy_strong": {
+        "en": "Score {score}/100 ({rating}) — Strong policy. Broker risk: {broker}. Generally recommended, but always read the fine print.",
+        "hi": "Score {score}/100 ({rating}) — Mazboot policy. Broker risk: {broker}. Generally recommend ki jaati hai.",
+        "mr": "Score {score}/100 ({rating}) — Changle policy. Broker risk: {broker}. Sadhaaranpane shifiaarash keleli.",
+        "ta": "Score {score}/100 ({rating}) — Valimaiyaana policy. Broker aapathu: {broker}. Podhuvaan paravaayillai.",
+    },
+    "buy_moderate": {
+        "en": "Score {score}/100 ({rating}) — Average policy. Broker risk: {broker}. Negotiate high-risk clauses before signing.",
+        "hi": "Score {score}/100 ({rating}) — Average policy. Broker risk: {broker}. Sign karne se pehle high-risk clauses negotiate karein.",
+        "mr": "Score {score}/100 ({rating}) — Saadhaaran policy. Broker risk: {broker}. Sign karayapurvee negotiate kara.",
+        "ta": "Score {score}/100 ({rating}) — Saadharana policy. Broker aapathu: {broker}. Kainnamaadumunbu pEsungkaL.",
+    },
+    "buy_weak": {
+        "en": "Score {score}/100 ({rating}) — Weak policy. Broker risk: {broker}. Not recommended — consider alternatives.",
+        "hi": "Score {score}/100 ({rating}) — Kamzor policy. Broker risk: {broker}. Recommend nahi — doosre options dekhein.",
+        "mr": "Score {score}/100 ({rating}) — Kamkuvat policy. Broker risk: {broker}. Shifiaarash nahi — paryaay shoda.",
+        "ta": "Score {score}/100 ({rating}) — Valiyatra policy. Broker aapathu: {broker}. Marru option paarkungkaL.",
+    },
+    "negotiate_none": {
+        "en": "No high-risk clauses found to negotiate. The policy looks structurally sound.",
+        "hi": "Negotiate karne ke liye koi high-risk clause nahi mila. Policy theek lagti hai.",
+        "mr": "Negotiate karnyasathi konitihi high-risk clause sapadla nahi.",
+        "ta": "Pesi mudivu seiya adhika aapathu clause illai.",
+    },
+    "negotiate_high": {
+        "en": "Before buying, ask the insurer to clarify or waive: {high}. Get any changes in writing.",
+        "hi": "Kharidne se pehle insurer se clarify karein: {high}. Koi bhi badlaav writing mein lein.",
+        "mr": "Kharidnyapurvee insurer kade ya clauses baddal vicharaa: {high}.",
+        "ta": "Vangumunbu insurer kitta theeLppaduththungkaL: {high}. Ezhutthil vaangungkaL.",
+    },
+    "all_found": {
+        "en": "All standard clauses were detected. No missing sections found.",
+        "hi": "Sabhi standard clauses detect hue. Koi missing section nahi mila.",
+        "mr": "Sarva samannya clauses sapadlle. Konitihi missing section sapadla nahi.",
+        "ta": "Ellaa saadharana clause kaLum kandupidikkapaddu.",
+    },
+    "not_found_missing": {
+        "en": "These clauses were not detected: {missing}. Ask the insurer specifically about these before buying.",
+        "hi": "Ye clauses detect nahi hue: {missing}. Kharidne se pehle insurer se specifically poochein.",
+        "mr": "He clauses sapadlle nahi: {missing}. Kharidnyapurvee insurer la specifically vicharaa.",
+        "ta": "Intha clause kaL kandupidikkapadavillai: {missing}. Insurer kitta kudrippittu ketungkaL.",
+    },
+    "generic": {
+        "en": "Policy score: {score}/100 ({rating}). High-risk areas: {high}. IRDAI compliance: {comply}. Broker risk: {broker}. Ask me about risks, waiting period, or whether to buy.",
+        "hi": "Policy score: {score}/100 ({rating}). High-risk: {high}. IRDAI compliance: {comply}. Broker risk: {broker}.",
+        "mr": "Policy score: {score}/100 ({rating}). High-risk: {high}. IRDAI compliance: {comply}. Broker risk: {broker}.",
+        "ta": "Policy score: {score}/100 ({rating}). Adhika aapathu: {high}. IRDAI iNakkam: {comply}. Broker aapathu: {broker}.",
+    },
+    "appeal_strong": {
+        "en": "Appeal strength: {label} ({pct}%). {reasoning} — Strong chance of success. File immediately.",
+        "hi": "Appeal strength: {label} ({pct}%). {reasoning} — Jeetne ki acchi umeed. Turant file karein.",
+        "mr": "Appeal strength: {label} ({pct}%). {reasoning} — Yash milnyachi changle shaktata. Laagalach file kara.",
+        "ta": "Appeal valimai: {label} ({pct}%). {reasoning} — Vetri kittum vaaippu nannaa uLLadhu. Udanae file seyyungkaL.",
+    },
+    "appeal_moderate": {
+        "en": "Appeal strength: {label} ({pct}%). {reasoning} — Moderate chance. Strengthen your evidence before filing.",
+        "hi": "Appeal strength: {label} ({pct}%). {reasoning} — Moderate chance. File karne se pehle evidence mazboot karein.",
+        "mr": "Appeal strength: {label} ({pct}%). {reasoning} — Moderate chance. File karayapurvee evidence mazboot kara.",
+        "ta": "Appeal valimai: {label} ({pct}%). {reasoning} — Nadutthara vaaippu. Saatchi valimai seyyungkaL.",
+    },
+    "appeal_weak": {
+        "en": "Appeal strength: {label} ({pct}%). {reasoning} — Low chance currently. Gather more evidence before appealing.",
+        "hi": "Appeal strength: {label} ({pct}%). {reasoning} — Abhi kam chance. Aur evidence ikathe karein.",
+        "mr": "Appeal strength: {label} ({pct}%). {reasoning} — Kam chance. Jaast evidence gola kara.",
+        "ta": "Appeal valimai: {label} ({pct}%). {reasoning} — Ippodhaikku kurai vaaippu. Jaasta saatchi seRuungkaL.",
+    },
+    "overturn": {
+        "en": "To strengthen your case, address these weak points: {weak}. Gather discharge summaries, doctor letters, and payment receipts.",
+        "hi": "Case mazboot karne ke liye: {weak}. Discharge summary, doctor letter aur receipts ikathe karein.",
+        "mr": "Case mazboot karnyasathi: {weak}. Discharge summary, doctor patra aani receipts gola kara.",
+        "ta": "Vazhakkai valimaipaduththa: {weak}. Discharge summary, doctor kaitham, receipts seRuungkaL.",
+    },
+    "moratorium": {
+        "en": "Under IRDAI's 8-year moratorium: after 8 continuous years of coverage, NO claim can be rejected for pre-existing disease — even if undisclosed at purchase.",
+        "hi": "IRDAI ke 8-saal moratorium ke anusar: 8 saal baad koi bhi claim pre-existing ke naam par reject nahi ho sakta.",
+        "mr": "IRDAI chya 8-varsha moratorium niyamanusaar: 8 varsha nantara pre-existing kaarnane claim nakarau shakat nahi.",
+        "ta": "IRDAI in 8-varudham moratorium: 8 aaNdugaL piragu pre-existing noi karanamaaaga claim maRukka mudiyaadhu.",
+    },
+    "next_steps_dynamic": {
+        "en": "Recommended next steps: {steps}",
+        "hi": "Agle kadam: {steps}",
+        "mr": "Pudhaache kadam: {steps}",
+        "ta": "Aduththa padikaL: {steps}",
+    },
+    "next_steps_generic": {
+        "en": "Next steps: 1. File complaint with GRO within 15 days. 2. Escalate to IRDAI IGMS (igms.irda.gov.in). 3. Approach Insurance Ombudsman within 1 year (cioins.co.in). 4. Consumer Court as last resort.",
+        "hi": "Agle kadam: 1. 15 din mein GRO complaint. 2. IRDAI IGMS. 3. 1 saal mein Ombudsman. 4. Consumer Court.",
+        "mr": "Pudhaache kadam: 1. 15 divsat GRO takraar. 2. IRDAI IGMS. 3. 1 varshaat Ombudsman. 4. Consumer Court.",
+        "ta": "Aduththa padikaL: 1. 15 naaLukkuL GRO. 2. IRDAI IGMS. 3. 1 varudhatthil Ombudsman. 4. Consumer Court.",
+    },
+    "ombudsman": {
+        "en": "Insurance Ombudsman: Free, binding for claims up to ₹50 lakhs. File within 1 year of rejection. Find your office at cioins.co.in.",
+        "hi": "Insurance Ombudsman: ₹50 lakh tak free aur binding. 1 saal mein file karein. cioins.co.in.",
+        "mr": "Insurance Ombudsman: ₹50 lakh paryant free. 1 varshaat file kara. cioins.co.in.",
+        "ta": "Insurance Ombudsman: ₹50 latcham varai ilaiyadhu. 1 varudhatthil file seyyungkaL. cioins.co.in.",
+    },
+    "documents": {
+        "en": "Documents needed for appeal: original rejection letter, hospital discharge summary, all bills and receipts, doctor's diagnosis certificate, policy document copy.",
+        "hi": "Appeal ke liye documents: original rejection letter, discharge summary, bills, doctor certificate, policy copy.",
+        "mr": "Appeal sathi documents: original rejection letter, discharge summary, bills, doctor certificate, policy copy.",
+        "ta": "Appeal aavanangkaL: original maRuppu kaitham, discharge summary, bills, doctor certificate, policy nakal.",
+    },
+    "clause_challengeable": {
+        "en": "Rejection reason: {why}. Clause: {clause}. Alignment: {alignment} — this clause may be challengeable. File an appeal with supporting medical evidence.",
+        "hi": "Rejection reason: {why}. Clause: {clause}. Alignment: {alignment} — challenge kiya ja sakta hai. Medical evidence ke saath appeal karein.",
+        "mr": "Rejection kaaran: {why}. Clause: {clause}. Alignment: {alignment} — challenge karu shaktao. Medical evidence saathe appeal kara.",
+        "ta": "Maruthal karanam: {why}. Clause: {clause}. Alignment: {alignment} — savalippikka mudiyum. Medical saatchi udaiya appeal seyyungkaL.",
+    },
+    "clause_firm": {
+        "en": "Rejection reason: {why}. Clause: {clause}. Alignment: {alignment} — insurer's position appears strong. Seek legal opinion before appealing.",
+        "hi": "Rejection reason: {why}. Clause: {clause}. Alignment: {alignment} — insurer ki position mazboot. Legal opinion lein.",
+        "mr": "Rejection kaaran: {why}. Clause: {clause}. Alignment: {alignment} — insurer chi position mazboot. Legal opinion ghya.",
+        "ta": "Maruthal karanam: {why}. Clause: {clause}. Alignment: {alignment} — insurer nillai valimaiyaanadu. Legal katturai vaangungkaL.",
+    },
+    "audit_generic": {
+        "en": "Rejection reason: {why}. Clause: {clause}. Alignment: {alignment}. Appeal: {label} ({pct}%). Strong points: {strong}. Weak points: {weak}.",
+        "hi": "Rejection reason: {why}. Clause: {clause}. Alignment: {alignment}. Appeal: {label} ({pct}%). Strong: {strong}. Weak: {weak}.",
+        "mr": "Rejection kaaran: {why}. Clause: {clause}. Alignment: {alignment}. Appeal: {label} ({pct}%). Strong: {strong}. Weak: {weak}.",
+        "ta": "Maruthal karanam: {why}. Clause: {clause}. Alignment: {alignment}. Appeal: {label} ({pct}%). Valimai: {strong}. Kuraipaadu: {weak}.",
+    },
+}
+
+
+def t(key: str, lang: str = "en", **kwargs) -> str:
+    entry = _TRANSLATIONS.get(key)
+    if entry is None:
+        return f"[{key}]"
+    template = entry.get(lang) or entry.get("en", f"[{key}]")
+    if kwargs:
+        try:
+            return template.format(**kwargs)
+        except KeyError:
+            return template
+    return template
