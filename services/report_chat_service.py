@@ -348,8 +348,8 @@ def _audit_fallback(q: str, report: dict, lang: str) -> str:
 
     st = "; ".join(strong[:2]) or "none identified"
     wk = "; ".join(weak[:2]) or "none identified"
-    return t("generic", lang, why=why, clause=clause, alignment=alignment,
-             label=label, pct=pct, strong=st, weak=wk)
+    return t("audit_generic", lang, why=why, clause=clause, alignment=alignment,
+         label=label, pct=pct, strong=st, weak=wk)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
