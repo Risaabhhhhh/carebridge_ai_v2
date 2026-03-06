@@ -4,10 +4,10 @@
 # lang param ("en", "hi", "mr", "ta") threads through prompt + fallback.
 
 from llm.generation import generate
+from llm.report_chat_prompt import report_chat_prompt    # ← MOVE THIS UP (before multilingual)
 from llm.multilingual_translations import t, SPEECH_LANG_CODES
 from schemas.chat import ReportChatResponse
 from services.chat_memory import get_session, add_message, get_history, get_report_data
-from llm.report_chat_prompt import report_chat_prompt   
 
 _MAX_HISTORY_TURNS = 6
 _SUPPORTED_LANGS   = set(SPEECH_LANG_CODES.keys())
