@@ -42,8 +42,7 @@ interface Message { role: Role; content: string; }
 interface QuizQuestion { question: string; options: string[]; correct: number; explanation: string; }
 interface Lesson {
   id: string; title: string; duration: string; summary: string;
-  content: string[]; videoId: string; videoTitle: string;
-  videoChannel: string;
+  content: string[]; videoId: string; videoTitle: string; videoChannel: string;
   quiz: QuizQuestion[]; tag?: string;
 }
 interface Module {
@@ -53,27 +52,31 @@ interface Module {
 type View = "home" | "module" | "lesson" | "quiz" | "quiz-result";
 
 /* ══════════════════════════════════════════════════════════════
-   DESIGN TOKENS — warm saffron editorial, Indian heritage
+   DESIGN TOKENS — matches audit page exactly
 ══════════════════════════════════════════════════════════════ */
-const T = {
-  paper:    "#FAF7F2",
-  paperDim: "#F2EDE4",
-  paperBdr: "#E0D9CE",
-  dark:     "#1A1108",
-  darkMid:  "#2E2010",
-  ink:      "#3D2E18",
-  muted:    "#8C7B65",
-  saffron:  "#E8760A",
-  saffronL: "#F59332",
-  saffronD: "#B85C06",
-  forest:   "#1E4D2B",
-  forestL:  "#2E7042",
-  forestDim:"#122B18",
-  crimson:  "#8B1A1A",
-  crimsonL: "#C23232",
-  serif:    "'Playfair Display', Georgia, serif",
-  sans:     "'DM Sans', system-ui, sans-serif",
-  mono:     "'JetBrains Mono', 'Courier New', monospace",
+const C = {
+  bg:       "#f0ece3",
+  white:    "#ffffff",
+  paper:    "#faf8f3",
+  bdr:      "#c8c2b4",
+  bdrLight: "#e8e3d8",
+  dark:     "#0a0f0d",
+  darkMid:  "#1a2018",
+  ink:      "#1a2018",
+  muted:    "#5a7060",
+  mutedLt:  "#9a9890",
+  forest:   "#1e5c2e",
+  forestL:  "#2d7a42",
+  forestDim:"#eef5f0",
+  green:    "#4a9d5f",
+  saffron:  "#e8760a",
+  saffronL: "#f59332",
+  amber:    "#7a4e08",
+  amberBg:  "#faecd0",
+  amberBdr: "#e0b870",
+  serif:    "'Cormorant Garamond', Georgia, serif",
+  sans:     "'Outfit', system-ui, sans-serif",
+  mono:     "'DM Mono', 'Courier New', monospace",
 } as const;
 
 /* ══════════════════════════════════════════════════════════════
@@ -81,7 +84,7 @@ const T = {
 ══════════════════════════════════════════════════════════════ */
 interface Lang { label: string; code: string; voiceLang: string; placeholder: string; }
 const LANGS: Lang[] = [
-  { label:"English", code:"en", voiceLang:"en-IN", placeholder:"Ask me anything…" },
+  { label:"English", code:"en", voiceLang:"en-IN", placeholder:"Ask me anything about this lesson…" },
   { label:"हिन्दी",  code:"hi", voiceLang:"hi-IN", placeholder:"कुछ भी पूछें…" },
   { label:"मराठी",  code:"mr", voiceLang:"mr-IN", placeholder:"काहीही विचारा…" },
   { label:"தமிழ்",  code:"ta", voiceLang:"ta-IN", placeholder:"எதையும் கேளுங்கள்…" },
@@ -89,10 +92,6 @@ const LANGS: Lang[] = [
 
 /* ══════════════════════════════════════════════════════════════
    CURRICULUM DATA
-   Video IDs: real Indian finance / insurance education channels.
-   Channels: Labour Law Advisor, Asset Yogi, CA Rachana Ranade,
-   Pranjal Kamra, Shankar Nath. If any video is removed, search
-   the channel for the same topic and replace the ID.
 ══════════════════════════════════════════════════════════════ */
 const MODULES: Module[] = [
   {
@@ -111,9 +110,9 @@ const MODULES: Module[] = [
           "In India, healthcare costs have risen 15–18% annually — double general inflation. A simple appendix surgery in a Mumbai private hospital costs ₹1.5–3 lakhs. A cardiac bypass can exceed ₹5 lakhs. Without insurance, one hospitalisation can wipe out years of savings.",
           "Two main types: **individual plans** (cover one person) and **family floater plans** (cover the entire family under one shared sum insured). A family floater is usually 30–40% cheaper but all members share the same limit — risky if seniors are included.",
           "The **TPA** (Third Party Administrator) is the intermediary that processes your claims — companies like Medi Assist, Vipul Medcorp, or MDIndia. Your hospital deals with the TPA, not the insurer directly. Save your TPA's helpline number separately from your policy copy.",
-          "Key insight: insurance is **not a savings product**. Unused premium is not returned. Its value is pure risk protection — covering costs that would otherwise devastate your finances. Think of it as paying a small known cost to avoid a potentially catastrophic unknown one.",
+          "Key insight: insurance is **not a savings product**. Unused premium is not returned. Its value is pure risk protection — covering costs that would otherwise devastate your finances.",
         ],
-        videoId:"oBFEzEMvIRM",
+        videoId:"jpAY1f_1A5M",
         videoTitle:"Health Insurance Kya Hota Hai? Complete Guide",
         videoChannel:"Labour Law Advisor",
         quiz:[
@@ -129,12 +128,12 @@ const MODULES: Module[] = [
         summary:"Your premium depends on age, sum insured, city, pre-existing conditions, and add-ons. Age is the biggest factor by far — buy early.",
         content:[
           "The **premium** is the annual amount you pay to keep your policy active. Miss the renewal date and coverage lapses — claims made even one day after lapse won't be paid, and waiting period credits reset to zero.",
-          "In India, premiums are driven by: **age** (the dominant factor — a 25-year-old pays roughly 3× less than a 55-year-old for identical cover), **sum insured**, **zone/city** (Zone A cities like Delhi/Mumbai cost 30–40% more than smaller cities), **pre-existing diseases**, and **add-ons** like maternity or critical illness riders.",
-          "**No-Claim Bonus (NCB):** If you make no claims in a year, most insurers add 10–50% more sum insured at the same premium. Example: ₹5L policy → claim-free year → ₹5.5L next year at no extra cost. NCB compounds year over year. Even a ₹500 pharmacy claim can cost you ₹50,000 in lost NCB over time.",
-          "**IRDAI 2024 update:** Insurers can no longer impose entry age limits. Senior citizens above 65 can now buy fresh health insurance. The maximum waiting period for pre-existing diseases has also been reduced from 48 months to 36 months — a major consumer win.",
-          "Practical example: In Bengaluru, a 35-year-old buying ₹10L individual cover pays approximately ₹8,000–₹12,000/year. Adding a 62-year-old parent to a family floater can push this to ₹35,000–₹55,000. Always compare on IRDAI-regulated comparison portals before buying.",
+          "In India, premiums are driven by: **age** (the dominant factor — a 25-year-old pays roughly 3× less than a 55-year-old for identical cover), **sum insured**, **zone/city** (Zone A cities like Delhi/Mumbai cost 30–40% more), **pre-existing diseases**, and **add-ons** like maternity or critical illness riders.",
+          "**No-Claim Bonus (NCB):** If you make no claims in a year, most insurers add 10–50% more sum insured at the same premium. NCB compounds year over year. Even a ₹500 pharmacy claim can cost you ₹50,000 in lost NCB over time.",
+          "**IRDAI 2024 update:** Insurers can no longer impose entry age limits. Senior citizens above 65 can now buy fresh health insurance. The maximum waiting period for pre-existing diseases has been reduced from 48 months to 36 months.",
+          "Practical example: In Bengaluru, a 35-year-old buying ₹10L individual cover pays approximately ₹8,000–₹12,000/year. Adding a 62-year-old parent to a family floater can push this to ₹35,000–₹55,000.",
         ],
-        videoId:"wkqxMoKFHsk",
+        videoId:"OezEJXKYThQ",
         videoTitle:"Health Insurance Premium Calculation — Explained Simply",
         videoChannel:"CA Rachana Ranade",
         quiz:[
@@ -144,23 +143,23 @@ const MODULES: Module[] = [
         ],
       },
       {
-        id:"copay", tag:"⚠️ HIDDEN TRAPS",
+        id:"copay", tag:"⚠ HIDDEN TRAPS",
         title:"Co-payment, Deductibles & Sub-limits",
         duration:"7 min",
         summary:"These clauses quietly reduce your payout at claim time. Most policyholders discover them only inside the hospital. Learn them before buying.",
         content:[
-          "**Co-payment** means you agree to pay a fixed percentage of every claim yourself. Example: 20% co-pay on a ₹1,00,000 claim = you pay ₹20,000, insurer pays ₹80,000. Co-pay is common in senior citizen policies and in plans covering pre-existing diseases from day one.",
-          "**Deductible** is a fixed rupee amount you absorb before insurance activates. Example: ₹25,000 deductible = any bill below ₹25,000 is entirely yours; above that, insurer pays the excess. Deductibles reduce premiums by 20–35% — useful if you have emergency savings as a buffer.",
-          "**Room rent sublimit** is the most misunderstood trap. If your policy caps room rent at 1% of sum insured (₹5,000/day on a ₹5L policy) and you stay in a ₹10,000/day room, the insurer applies **proportionate deduction** to your ENTIRE bill — not just the room. A ₹60,000 surgery bill becomes ₹30,000 payout. Always choose 'no room rent cap' or 'any room' plans.",
-          "**Disease-specific sublimits** cap payout for certain surgeries regardless of actual cost. Cataract: ₹30,000–₹50,000 cap. Hernia: ₹40,000–₹60,000 cap. Private hospital costs may be 2–3× higher. Always check the Schedule of Benefits table before buying.",
-          "**IRDAI 2024 update:** AYUSH sublimits have been removed. Ayurveda, Yoga, Unani, Siddha, and Homeopathy treatments are now covered up to the full sum insured — same as allopathic. If your policy still has a separate lower AYUSH sublimit, it is non-compliant with 2024 guidelines and challengeable.",
+          "**Co-payment** means you agree to pay a fixed percentage of every claim yourself. Example: 20% co-pay on a ₹1,00,000 claim = you pay ₹20,000, insurer pays ₹80,000. Co-pay is common in senior citizen policies and plans covering pre-existing diseases from day one.",
+          "**Deductible** is a fixed rupee amount you absorb before insurance activates. Example: ₹25,000 deductible = any bill below ₹25,000 is entirely yours; above that, insurer pays the excess. Deductibles reduce premiums by 20–35%.",
+          "**Room rent sublimit** is the most misunderstood trap. If your policy caps room rent at 1% of sum insured (₹5,000/day on a ₹5L policy) and you stay in a ₹10,000/day room, the insurer applies **proportionate deduction** to your ENTIRE bill — not just the room.",
+          "**Disease-specific sublimits** cap payout for certain surgeries regardless of actual cost. Cataract: ₹30,000–₹50,000 cap. Hernia: ₹40,000–₹60,000 cap. Always check the Schedule of Benefits table before buying.",
+          "**IRDAI 2024 update:** AYUSH sublimits have been removed. Ayurveda, Yoga, Unani, Siddha, and Homeopathy treatments are now covered up to the full sum insured — same as allopathic.",
         ],
-        videoId:"qRGqFZbEqG4",
+        videoId:"DrKlx_6MnHM",
         videoTitle:"Health Insurance Sub-limits, Co-pay & Deductibles Explained",
         videoChannel:"Asset Yogi",
         quiz:[
           { question:"You have 20% co-pay. Your hospital bill is ₹2,00,000. How much do YOU pay?", options:["₹20,000","₹40,000","₹80,000","Nothing — insurer pays all"], correct:1, explanation:"20% of ₹2,00,000 = ₹40,000 out of your pocket. Insurer pays ₹1,60,000. Co-pay plans have lower premiums but higher out-of-pocket costs when you actually claim." },
-          { question:"Room rent proportionate deduction means:", options:["Only the room rent excess is deducted","Your ENTIRE bill is reduced proportionally if you exceed the room rent cap","You pay a fixed ₹500/day penalty","The insurer pays 50% of all costs"], correct:1, explanation:"This is the brutal reality. Exceeding the room rent cap triggers deduction on the whole bill — doctor fees, surgery, ICU, everything. Not just the room. It can cut your payout in half." },
+          { question:"Room rent proportionate deduction means:", options:["Only the room rent excess is deducted","Your ENTIRE bill is reduced proportionally if you exceed the room rent cap","You pay a fixed ₹500/day penalty","The insurer pays 50% of all costs"], correct:1, explanation:"Exceeding the room rent cap triggers deduction on the whole bill — doctor fees, surgery, ICU, everything. Not just the room. It can cut your payout in half." },
           { question:"A deductible of ₹25,000 means:", options:["You pay 25% of every claim","You pay the first ₹25,000 of any claim; insurer pays above that","Insurer pays ₹25,000 maximum","Your premium is discounted by ₹25,000"], correct:1, explanation:"Deductible = the threshold you absorb. ₹75,000 bill with ₹25,000 deductible = insurer pays ₹50,000. Lower premium tradeoff for higher out-of-pocket on small claims." },
         ],
       },
@@ -178,18 +177,18 @@ const MODULES: Module[] = [
         duration:"6 min",
         summary:"Cashless means the insurer pays the hospital directly. Reimbursement means you pay first and claim back. Both have strict IRDAI timelines.",
         content:[
-          "**Cashless claims** work only at network hospitals — hospitals with a pre-agreed arrangement with your insurer or TPA. You present your health card, the hospital submits a pre-authorisation request to the TPA, and if approved, the insurer settles the bill directly. You pay only non-covered items.",
+          "**Cashless claims** work only at network hospitals — hospitals with a pre-agreed arrangement with your insurer or TPA. You present your health card, the hospital submits a pre-authorisation request to the TPA, and if approved, the insurer settles the bill directly.",
           "**Reimbursement claims** allow you to use any hospital. You pay the full bill, collect all original documents, and submit within 30–45 days from discharge. The insurer reviews and pays back the eligible amount minus any deductibles or co-pay.",
-          "**IRDAI 2024 cashless mandate:** Insurers must decide on pre-authorisation within **1 hour** for both emergency and planned admissions. Final discharge authorisation must be given within **3 hours** of the hospital's request. Delays beyond this: the insurer bears extra hospital charges caused by the wait. This is a hard regulatory requirement.",
-          "**Critical documents for any claim:** Original discharge summary · Itemised hospital bills · Doctor's prescription and case papers · Investigation reports (blood tests, scans, ECG) · Pharmacy bills · Pre-auth approval letter (cashless) · Signed claim form · PAN card copy if claim exceeds ₹1 lakh.",
-          "**Pro tip:** Always file a reimbursement claim even if your cashless pre-auth was partially denied. Submit the full itemised bill — the insurer may cover more on formal review. Photograph all documents before submitting originals. Even ₹50 pharmacy slips add up.",
+          "**IRDAI 2024 cashless mandate:** Insurers must decide on pre-authorisation within **1 hour** for both emergency and planned admissions. Final discharge authorisation must be given within **3 hours** of the hospital's request.",
+          "**Critical documents for any claim:** Original discharge summary · Itemised hospital bills · Doctor's prescription · Investigation reports (blood tests, scans, ECG) · Pharmacy bills · Pre-auth approval letter (cashless) · Signed claim form · PAN card copy if claim exceeds ₹1 lakh.",
+          "**Pro tip:** Always file a reimbursement claim even if your cashless pre-auth was partially denied. Submit the full itemised bill — the insurer may cover more on formal review. Photograph all documents before submitting originals.",
         ],
-        videoId:"A3hBbMj5Eus",
+        videoId:"DrKlx_6MnHM",
         videoTitle:"Cashless vs Reimbursement Health Insurance Claim",
         videoChannel:"Labour Law Advisor",
         quiz:[
-          { question:"Cashless claims are available at:", options:["Any hospital in India","Only network hospitals empanelled with your insurer/TPA","Any NABH-accredited hospital","Only government hospitals"], correct:1, explanation:"Cashless requires a network hospital with a TPA agreement. Always verify your insurer's hospital network before admission — especially for planned procedures. The list is on their website." },
-          { question:"Under IRDAI 2024, reimbursement claims must be settled within:", options:["7 days","15 days","30 days of receiving complete documents","60 days"], correct:2, explanation:"IRDAI mandates 30-day settlement after all documents. Delays entitle you to interest at 2% above the bank rate. Insist on this in writing if your insurer is slow." },
+          { question:"Cashless claims are available at:", options:["Any hospital in India","Only network hospitals empanelled with your insurer/TPA","Any NABH-accredited hospital","Only government hospitals"], correct:1, explanation:"Cashless requires a network hospital with a TPA agreement. Always verify your insurer's hospital network before admission — especially for planned procedures." },
+          { question:"Under IRDAI 2024, reimbursement claims must be settled within:", options:["7 days","15 days","30 days of receiving complete documents","60 days"], correct:2, explanation:"IRDAI mandates 30-day settlement after all documents. Delays entitle you to interest at 2% above the bank rate." },
           { question:"For final discharge authorisation, IRDAI 2024 requires response within:", options:["30 minutes","3 hours of the hospital's discharge request","24 hours","Next working day"], correct:1, explanation:"IRDAI 2024 mandates 3-hour discharge authorisation. If delayed, the insurer must bear any extra hospital charges incurred by the patient waiting for clearance." },
         ],
       },
@@ -200,18 +199,18 @@ const MODULES: Module[] = [
         summary:"Most rejections are challengeable. 60%+ of contested cases settle in the policyholder's favour at the Ombudsman. Know your steps.",
         content:[
           "Top 5 rejection reasons in India: **Non-disclosure of pre-existing disease** (most common) · **Waiting period not completed** · **Policy lapsed at time of admission** · **Treatment classified as excluded** · **Inadequate or missing documentation**.",
-          "**Non-disclosure:** If you didn't mention a pre-existing condition at policy purchase, the insurer can reject related claims during the waiting period. However, after **60 months** (5 years) of continuous coverage — the moratorium under IRDAI 2024 — insurers cannot reject on non-disclosure grounds. Previously 8 years, now reduced to 5.",
-          "**4-step appeal process:** Step 1: Get the rejection in writing with the exact policy clause cited. Step 2: Verify whether that clause actually applies to your case — many insurers cite broad clauses hoping you won't check. Step 3: File a formal complaint with the insurer's GRO (Grievance Redressal Officer) — they must respond within 15 days by IRDAI mandate.",
-          "Step 4: If GRO response is unsatisfactory or you get no reply in 15 days, file on IRDAI IGMS at igms.irda.gov.in. Free, online, creates a formal regulatory trail. Insurer must respond within 15 days. Step 5: If still unresolved after 30 days total, approach the **Insurance Ombudsman** — free, binding for claims up to ₹50 lakhs, average resolution in 90 days.",
-          "**Success data:** IRDAI annual reports show over 60% of complaints filed with the Ombudsman result in partial or full settlement for the policyholder. The system works — but only if you use it. Don't accept a rejection without at least filing a GRO complaint. It costs nothing.",
+          "**Non-disclosure:** After **60 months** (5 years) of continuous coverage — the moratorium under IRDAI 2024 — insurers cannot reject on non-disclosure grounds. Previously 8 years, now reduced to 5.",
+          "**4-step appeal process:** Step 1: Get rejection in writing with exact clause cited. Step 2: Verify the clause actually applies. Step 3: File with insurer's GRO — they must respond within 15 days. Step 4: File on IRDAI IGMS at igms.irda.gov.in.",
+          "If still unresolved after 30 days, approach the **Insurance Ombudsman** — free, binding for claims up to ₹50 lakhs, average resolution in 90 days.",
+          "**Success data:** IRDAI annual reports show over 60% of complaints filed with the Ombudsman result in partial or full settlement for the policyholder. The system works — but only if you use it.",
         ],
         videoId:"Ev_Vc9cLjdo",
         videoTitle:"Claim Reject Ho Gaya? Yeh Karo — Complete Guide",
         videoChannel:"Pranjal Kamra / Finology",
         quiz:[
-          { question:"Under IRDAI 2024, after how many months of continuous coverage can an insurer NOT reject on non-disclosure grounds?", options:["24 months","36 months","48 months","60 months"], correct:3, explanation:"IRDAI 2024 reduced the moratorium from 8 years to 5 years (60 months). After 5 continuous years, non-disclosure cannot be cited for rejection — even if the condition was genuinely undisclosed." },
-          { question:"The Insurance Ombudsman handles claims up to:", options:["₹5 lakhs","₹10 lakhs","₹25 lakhs","₹50 lakhs"], correct:3, explanation:"The Insurance Ombudsman adjudicates disputes up to ₹50 lakhs. The service is completely free. Awards are binding on the insurer. Average resolution: 60–90 days." },
-          { question:"When your cashless is denied at the hospital, what should you do FIRST?", options:["Pay and forget about it","Demand the denial in writing with the specific clause cited","Hire a lawyer immediately","Switch to a different hospital"], correct:1, explanation:"Always get denials in writing with the exact clause cited. That written rejection is your evidence for the appeal. Without it, the insurer can later claim a 'process issue' rather than a substantive denial." },
+          { question:"Under IRDAI 2024, after how many months of continuous coverage can an insurer NOT reject on non-disclosure grounds?", options:["24 months","36 months","48 months","60 months"], correct:3, explanation:"IRDAI 2024 reduced the moratorium from 8 years to 5 years (60 months). After 5 continuous years, non-disclosure cannot be cited for rejection." },
+          { question:"The Insurance Ombudsman handles claims up to:", options:["₹5 lakhs","₹10 lakhs","₹25 lakhs","₹50 lakhs"], correct:3, explanation:"The Insurance Ombudsman adjudicates disputes up to ₹50 lakhs. Completely free. Awards are binding on the insurer. Average resolution: 60–90 days." },
+          { question:"When your cashless is denied at the hospital, what should you do FIRST?", options:["Pay and forget about it","Demand the denial in writing with the specific clause cited","Hire a lawyer immediately","Switch to a different hospital"], correct:1, explanation:"Always get denials in writing with the exact clause cited. That written rejection is your evidence for the appeal." },
         ],
       },
     ],
@@ -228,19 +227,19 @@ const MODULES: Module[] = [
         duration:"7 min",
         summary:"PED is the most litigated area in Indian health insurance. IRDAI 2024 cut the lookback period from 48 to 36 months and the moratorium from 8 to 5 years.",
         content:[
-          "**Pre-Existing Disease (PED)** as defined by IRDAI 2024: any condition, ailment, or injury that was diagnosed by a physician, or for which symptoms clearly existed, within **36 months** prior to the date of first policy issuance. Previously 48 months — a major consumer-friendly change.",
-          "This definition matters enormously in practice. If your hypertension was diagnosed 4 years ago and you just bought a policy, it is NOT technically PED under the 2024 definition. If it was diagnosed 2 years ago, it falls within the window and the waiting period applies.",
+          "**Pre-Existing Disease (PED)** as defined by IRDAI 2024: any condition diagnosed by a physician, or for which symptoms clearly existed, within **36 months** prior to the date of first policy issuance. Previously 48 months — a major consumer-friendly change.",
+          "If your hypertension was diagnosed 4 years ago and you just bought a policy, it is NOT technically PED under the 2024 definition. If it was diagnosed 2 years ago, it falls within the window and the waiting period applies.",
           "**Waiting periods under 2024 rules:** Most policies now impose 1–3 years for PED (reduced from up to 4 years). During this period, claims directly arising from the PED condition will be rejected. After the waiting period, PED is covered fully and permanently.",
-          "**The 60-month moratorium:** After 5 years of continuous coverage, no insurer can reject a claim on grounds of non-disclosure or misrepresentation of a pre-existing condition. Previously 8 years — reduced to 5 years by IRDAI 2024. This is a hard statutory protection.",
-          "**Portability and PED credit:** If you port your policy to a new insurer, your served waiting period transfers in full. A policyholder who has served 2 years of a 3-year PED waiting period with Insurer A only needs 1 more year with Insurer B. The new insurer cannot restart your clock — this is an IRDAI portability guarantee.",
+          "**The 60-month moratorium:** After 5 years of continuous coverage, no insurer can reject a claim on grounds of non-disclosure or misrepresentation of a pre-existing condition. This is a hard statutory protection.",
+          "**Portability and PED credit:** If you port your policy to a new insurer, your served waiting period transfers in full. The new insurer cannot restart your clock — this is an IRDAI portability guarantee.",
         ],
         videoId:"M1JLFRwH63Y",
         videoTitle:"Pre-Existing Disease in Health Insurance — All Rules Explained",
         videoChannel:"Asset Yogi",
         quiz:[
-          { question:"Under IRDAI 2024, PED covers conditions diagnosed within how many months before buying the policy?", options:["12 months","24 months","36 months","48 months"], correct:2, explanation:"IRDAI 2024 reduced the PED lookback from 48 months to 36 months. Conditions beyond 3 years old are no longer automatically classified as PED — better for consumers with older health histories." },
-          { question:"When you port your policy, your PED waiting period credit:", options:["Resets to zero at the new insurer","Is transferred at 50% credit","Is fully transferred to the new insurer","Depends entirely on the new insurer's discretion"], correct:2, explanation:"IRDAI portability rules mandate full waiting period credit transfer. The new insurer must honour all the time you've already served. Non-negotiable — insist on it in writing during the porting process." },
-          { question:"After the 60-month moratorium, an insurer CAN still reject a claim if:", options:["The condition was clearly pre-existing","You didn't disclose it when buying","The claim involves proven fraud","The hospital is non-network"], correct:2, explanation:"The moratorium only blocks non-disclosure rejections. Proven fraud — deliberate false statements to obtain insurance — can still void the policy at any time, even after the moratorium." },
+          { question:"Under IRDAI 2024, PED covers conditions diagnosed within how many months before buying the policy?", options:["12 months","24 months","36 months","48 months"], correct:2, explanation:"IRDAI 2024 reduced the PED lookback from 48 months to 36 months. Conditions beyond 3 years old are no longer automatically classified as PED." },
+          { question:"When you port your policy, your PED waiting period credit:", options:["Resets to zero at the new insurer","Is transferred at 50% credit","Is fully transferred to the new insurer","Depends entirely on the new insurer's discretion"], correct:2, explanation:"IRDAI portability rules mandate full waiting period credit transfer. The new insurer must honour all the time you've already served." },
+          { question:"After the 60-month moratorium, an insurer CAN still reject a claim if:", options:["The condition was clearly pre-existing","You didn't disclose it when buying","The claim involves proven fraud","The hospital is non-network"], correct:2, explanation:"The moratorium only blocks non-disclosure rejections. Proven fraud can still void the policy at any time, even after the moratorium." },
         ],
       },
       {
@@ -249,19 +248,19 @@ const MODULES: Module[] = [
         duration:"6 min",
         summary:"Not everything is covered. But IRDAI regulates which exclusions are legal — and some insurers still try to enforce illegal ones.",
         content:[
-          "**Types of waiting periods:** Initial waiting period: 30 days for any illness (accidents always covered). PED waiting period: 1–3 years under 2024 rules. Specific illness waiting period: 1–2 years for listed surgeries — hernia, cataract, joint replacement, varicose veins. Maternity: 2–4 years. Each runs separately and concurrently.",
-          "**Standard exclusions IRDAI permits:** Cosmetic or aesthetic treatment, self-inflicted injuries, substance abuse and rehabilitation, war or nuclear events, experimental or unproven treatments. These are legally permissible across all plans.",
-          "**What IRDAI 2024 now prohibits:** Arbitrary fine-print exclusions not disclosed at point of sale · AYUSH sublimits lower than the sum insured (removed in 2024) · Mental illness exclusions (Mental Healthcare Act 2017 mandates parity) · Refusing policies to people with severe pre-existing conditions like cancer, renal failure, or AIDS.",
-          "**Mental health parity under law:** The Mental Healthcare Act 2017, Section 21(4) mandates that mental illness must be covered on par with physical illness. Psychiatry hospitalisation, approved therapy, and medications are covered. If your insurer rejects a mental health claim citing exclusion, cite this section verbatim in your GRO complaint — it is binding legislation, not a guideline.",
-          "**Pre-purchase checklist:** ✅ Room rent cap — prefer 'no limit' ✅ Co-pay percentage ✅ Disease-specific sublimits in Schedule of Benefits ✅ AYUSH coverage (must equal sum insured post-2024) ✅ Maternity waiting period if planning ✅ Network hospitals in your city ✅ Claim settlement ratio of the insurer (target >90%).",
+          "**Types of waiting periods:** Initial: 30 days for any illness (accidents always covered). PED: 1–3 years. Specific illness: 1–2 years for listed surgeries. Maternity: 2–4 years. Each runs separately and concurrently.",
+          "**Standard exclusions IRDAI permits:** Cosmetic or aesthetic treatment, self-inflicted injuries, substance abuse and rehabilitation, war or nuclear events, experimental or unproven treatments.",
+          "**What IRDAI 2024 now prohibits:** Arbitrary fine-print exclusions not disclosed at point of sale · AYUSH sublimits lower than the sum insured · Mental illness exclusions (Mental Healthcare Act 2017 mandates parity).",
+          "**Mental health parity under law:** The Mental Healthcare Act 2017, Section 21(4) mandates that mental illness must be covered on par with physical illness. If your insurer rejects a mental health claim citing exclusion, cite this section verbatim in your GRO complaint.",
+          "**Pre-purchase checklist:** ✅ Room rent cap — prefer 'no limit' ✅ Co-pay percentage ✅ Disease sublimits ✅ AYUSH coverage ✅ Network hospitals in your city ✅ Claim settlement ratio >90%",
         ],
         videoId:"JNAkUZZqgqs",
         videoTitle:"Health Insurance Exclusions — Kya Nahi Cover Hoga?",
         videoChannel:"Labour Law Advisor",
         quiz:[
-          { question:"The initial waiting period in most Indian health insurance policies is:", options:["7 days","15 days","30 days","90 days"], correct:2, explanation:"Standard initial waiting period is 30 days. Only accidental hospitalisations are covered during this time. Plan renewal timing carefully — lapses reset this clock to day zero." },
-          { question:"Under IRDAI 2024, AYUSH treatment must be covered:", options:["At 50% of allopathic coverage","Only for inpatient AYUSH care","Up to the full sum insured — same as allopathic","Only if the treating doctor is AYUSH-registered"], correct:2, explanation:"IRDAI 2024 removed all AYUSH sublimits. Any separate lower AYUSH limit in your current policy is now non-compliant with the 2024 Master Circular — you can challenge it." },
-          { question:"Mental health hospitalisation claims can be challenged under:", options:["Consumer Protection Act 1986 only","Mental Healthcare Act 2017 Section 21(4)","IRDAI Act 1999","Companies Act 2013"], correct:1, explanation:"Section 21(4) of the Mental Healthcare Act 2017 is binding legislation mandating insurance parity for mental illness. It overrides policy exclusion clauses. Use this citation verbatim in your appeal." },
+          { question:"The initial waiting period in most Indian health insurance policies is:", options:["7 days","15 days","30 days","90 days"], correct:2, explanation:"Standard initial waiting period is 30 days. Only accidental hospitalisations are covered during this time. Lapses reset this clock to day zero." },
+          { question:"Under IRDAI 2024, AYUSH treatment must be covered:", options:["At 50% of allopathic coverage","Only for inpatient AYUSH care","Up to the full sum insured — same as allopathic","Only if the treating doctor is AYUSH-registered"], correct:2, explanation:"IRDAI 2024 removed all AYUSH sublimits. Any separate lower AYUSH limit is now non-compliant and challengeable." },
+          { question:"Mental health hospitalisation claims can be challenged under:", options:["Consumer Protection Act 1986 only","Mental Healthcare Act 2017 Section 21(4)","IRDAI Act 1999","Companies Act 2013"], correct:1, explanation:"Section 21(4) of the Mental Healthcare Act 2017 is binding legislation mandating insurance parity for mental illness. It overrides policy exclusion clauses." },
         ],
       },
     ],
@@ -278,19 +277,19 @@ const MODULES: Module[] = [
         duration:"5 min",
         summary:"IRDAI is the Insurance Regulatory and Development Authority of India — the statutory body with power to penalise insurers, mandate products, and protect your rights.",
         content:[
-          "**IRDAI** (Insurance Regulatory and Development Authority of India) is the statutory regulator established under the IRDAI Act 1999. It licenses all insurers, sets product regulations, mandates disclosures, and has the power to impose fines, suspend licences, and mandate claim payments. The 2024 reforms represent the most comprehensive pro-consumer overhaul in IRDAI's history.",
-          "IRDAI's primary mandate for policyholders: ensuring insurers pay valid claims on time · mandating standardised exclusions and waiting periods · protecting against unfair practices · maintaining the IGMS grievance system · publishing insurer-wise claim settlement ratio data publicly every year.",
-          "**Key 2024 regulations:** Health Insurance Master Circular (29 May 2024) — covers: no age limits for buying insurance, PED lookback reduced to 36 months, 1-hour cashless authorisation, no AYUSH sublimits, 5-year moratorium. Download from irdai.gov.in.",
-          "IRDAI publishes annual **claim settlement ratio** data for every insurer at irdai.gov.in. Ratio below 85%: caution flag. Below 75%: serious concern. Industry average for standalone health insurers (Star Health, Niva Bupa, Care Health): 90–95%. Always check this before buying.",
-          "**What IRDAI cannot do:** It cannot directly order your specific claim to be paid — that is the Ombudsman's jurisdiction. However, filing on IGMS creates a regulatory record that most insurers respond to quickly. Many disputes resolve at the IGMS stage without needing the Ombudsman.",
+          "**IRDAI** (Insurance Regulatory and Development Authority of India) is the statutory regulator established under the IRDAI Act 1999. It licenses all insurers, sets product regulations, mandates disclosures, and can impose fines, suspend licences, and mandate claim payments.",
+          "IRDAI's mandate for policyholders: ensuring insurers pay valid claims on time · mandating standardised exclusions and waiting periods · protecting against unfair practices · maintaining the IGMS grievance system.",
+          "**Key 2024 regulations:** Health Insurance Master Circular (29 May 2024) — no age limits for buying insurance, PED lookback reduced to 36 months, 1-hour cashless authorisation, no AYUSH sublimits, 5-year moratorium.",
+          "IRDAI publishes annual **claim settlement ratio** data at irdai.gov.in. Ratio below 85%: caution. Below 75%: serious concern. Industry average for standalone health insurers: 90–95%.",
+          "**What IRDAI cannot do:** It cannot directly order your specific claim to be paid — that is the Ombudsman's jurisdiction. However, filing on IGMS creates a regulatory record that most insurers respond to quickly.",
         ],
-        videoId:"5ZsTsABCYcM",
+        videoId:"mxM_wonh56E",
         videoTitle:"IRDAI — Your Rights as a Policyholder | Complete Guide",
         videoChannel:"Shankar Nath",
         quiz:[
-          { question:"IRDAI was established under which Act?", options:["Insurance Act 1938","IRDAI Act 1999","Consumer Protection Act 2019","Companies Act 2013"], correct:1, explanation:"IRDAI is a statutory body under the Insurance Regulatory and Development Authority Act, 1999. It has full regulatory authority over all general and health insurers operating in India." },
-          { question:"A claim settlement ratio below which percentage is a serious red flag?", options:["95%","90%","85%","75%"], correct:3, explanation:"Industry consensus: below 75% is a red flag. Look for insurers consistently above 90% in health insurance. IRDAI publishes this data annually — free to access at irdai.gov.in." },
-          { question:"For your individual claim dispute, the correct escalation body is:", options:["Supreme Court of India","Insurance Ombudsman","National Consumer Commission","SEBI"], correct:1, explanation:"The Insurance Ombudsman is the designated quasi-judicial forum for individual claim disputes. Free, binding up to ₹50L, average 90-day resolution. IRDAI regulates the industry; Ombudsman resolves your specific dispute." },
+          { question:"IRDAI was established under which Act?", options:["Insurance Act 1938","IRDAI Act 1999","Consumer Protection Act 2019","Companies Act 2013"], correct:1, explanation:"IRDAI is a statutory body under the Insurance Regulatory and Development Authority Act, 1999. It has full regulatory authority over all insurers operating in India." },
+          { question:"A claim settlement ratio below which percentage is a serious red flag?", options:["95%","90%","85%","75%"], correct:3, explanation:"Industry consensus: below 75% is a red flag. Look for insurers consistently above 90% in health insurance. IRDAI publishes this data annually." },
+          { question:"For your individual claim dispute, the correct escalation body is:", options:["Supreme Court of India","Insurance Ombudsman","National Consumer Commission","SEBI"], correct:1, explanation:"The Insurance Ombudsman is the designated quasi-judicial forum for individual claim disputes. Free, binding up to ₹50L, average 90-day resolution." },
         ],
       },
       {
@@ -299,19 +298,19 @@ const MODULES: Module[] = [
         duration:"7 min",
         summary:"IGMS is the free online grievance portal. The Ombudsman is the final escalation — binding, fast, and free. These two tools resolve 60%+ of contested claims.",
         content:[
-          "**IGMS (Integrated Grievance Management System):** The official IRDAI portal at igms.irda.gov.in. File here if your insurer hasn't resolved your complaint within 15 days, or if you're dissatisfied with their response. Creates a formal paper trail visible to IRDAI's compliance division. Most insurers escalate internally the moment an IGMS number is generated.",
-          "**How to file on IGMS (step by step):** Go to igms.irda.gov.in → Register with mobile number → 'Register Complaint' → Select your insurer → Choose complaint category → Fill complaint details → Upload supporting documents (PDF/JPG) → Submit. You receive a unique complaint ID via SMS. Track status online. Insurer must respond within 15 days.",
-          "**IRDAI Consumer Helpline:** 155255 (toll-free, 8am–8pm Monday–Saturday) or 1800-4254-732. Available in Hindi and regional languages. Can file complaints by phone, get rights guidance, and track existing complaints. Very responsive — use it.",
-          "**Insurance Ombudsman:** 17 offices across India — jurisdiction based on your residential address. Handles disputes for claims below ₹50 lakhs. Completely free. Average resolution: 60–90 days. The Ombudsman's award is **binding on the insurer** (but you retain the right to go to Consumer Court if you're unhappy with the award amount).",
-          "**Ombudsman eligibility:** ✅ You have already complained to the insurer in writing. ✅ You received an unsatisfactory reply OR no reply within 30 days. ✅ Dispute involves a claim below ₹50 lakhs. ✅ Filing within 1 year of insurer's final rejection letter. Find your nearest office by PIN code at **cioins.co.in**.",
+          "**IGMS (Integrated Grievance Management System):** The official IRDAI portal at igms.irda.gov.in. File here if your insurer hasn't resolved your complaint within 15 days, or if you're dissatisfied with their response.",
+          "**How to file on IGMS:** Go to igms.irda.gov.in → Register with mobile number → 'Register Complaint' → Select your insurer → Choose complaint category → Fill details → Upload documents → Submit. You receive a unique complaint ID via SMS. Insurer must respond within 15 days.",
+          "**IRDAI Consumer Helpline:** 155255 (toll-free, 8am–8pm Monday–Saturday) or 1800-4254-732. Available in Hindi and regional languages.",
+          "**Insurance Ombudsman:** 17 offices across India — jurisdiction based on your residential address. Handles disputes for claims below ₹50 lakhs. Free. Average resolution: 60–90 days. The award is **binding on the insurer**.",
+          "**Ombudsman eligibility:** ✅ Already complained to insurer in writing. ✅ Unsatisfactory reply OR no reply within 30 days. ✅ Dispute below ₹50 lakhs. ✅ Filing within 1 year of rejection. Find your office at **cioins.co.in**.",
         ],
-        videoId:"Y9QBFNj0bMM",
+        videoId:"5narOFNcZio",
         videoTitle:"IRDAI IGMS Complaint Kaise File Karein? Step by Step",
         videoChannel:"Labour Law Advisor",
         quiz:[
-          { question:"How long does an insurer have to respond to an IGMS complaint?", options:["7 days","15 days","30 days","45 days"], correct:1, explanation:"IRDAI's Protection of Policyholders' Interests Regulations mandate 15-day response to IGMS complaints. No response in 15 days? Escalate directly to the Ombudsman — it strengthens your case." },
-          { question:"The Insurance Ombudsman award is:", options:["Advisory only — insurer can ignore it","Binding on the insurer — policyholder can still go to court if unsatisfied","Binding on both parties — neither can appeal further","Subject to High Court confirmation before taking effect"], correct:1, explanation:"Binding on the insurer. The policyholder retains the right to go to Consumer Court or civil court if not satisfied with the award amount — it's a one-way ratchet in your favour." },
-          { question:"You can approach the Ombudsman if your insurer hasn't resolved your complaint within:", options:["7 days","15 days","30 days","60 days"], correct:2, explanation:"After 30 days without resolution — or an unsatisfactory response at any point — you can approach the Ombudsman. Don't delay beyond the 1-year deadline from the final rejection letter." },
+          { question:"How long does an insurer have to respond to an IGMS complaint?", options:["7 days","15 days","30 days","45 days"], correct:1, explanation:"IRDAI mandates 15-day response to IGMS complaints. No response in 15 days? Escalate directly to the Ombudsman — it strengthens your case." },
+          { question:"The Insurance Ombudsman award is:", options:["Advisory only — insurer can ignore it","Binding on the insurer — policyholder can still go to court if unsatisfied","Binding on both parties — neither can appeal further","Subject to High Court confirmation before taking effect"], correct:1, explanation:"Binding on the insurer. The policyholder retains the right to go to Consumer Court if not satisfied with the award amount." },
+          { question:"You can approach the Ombudsman if your insurer hasn't resolved your complaint within:", options:["7 days","15 days","30 days","60 days"], correct:2, explanation:"After 30 days without resolution you can approach the Ombudsman. Don't delay beyond the 1-year deadline from the final rejection letter." },
         ],
       },
     ],
@@ -319,7 +318,7 @@ const MODULES: Module[] = [
 ];
 
 /* ══════════════════════════════════════════════════════════════
-   CHAT SYSTEM PROMPT
+   SYSTEM PROMPT
 ══════════════════════════════════════════════════════════════ */
 function buildSystemPrompt(lessonTitle: string, lessonContent: string[]): string {
   return `You are InsureIQ, a warm and knowledgeable insurance education assistant on CareBridge AI — a platform helping Indian policyholders understand health insurance.
@@ -331,10 +330,9 @@ ${lessonContent.map((p, i) => `${i+1}. ${p.replace(/\*\*/g,"")}`).join("\n")}
 
 Guidelines:
 - Answer questions about this lesson and general Indian health insurance
-- Reference IRDAI 2024 regulations where relevant (key changes: 36-month PED lookback, 1-hour cashless authorisation, no AYUSH sublimits, 5-year moratorium, no age limits)
+- Reference IRDAI 2024 regulations where relevant
 - Use Indian examples with ₹ amounts and real context (cities, IRDAI, TPA names like Medi Assist)
 - Be concise (under 180 words), warm, jargon-free
-- If asked about something outside this topic, briefly answer then redirect
 - Never give legal advice — recommend IRDAI IGMS (155255) or Insurance Ombudsman (cioins.co.in) for disputes
 - Do not use markdown headers in your response`;
 }
@@ -342,16 +340,16 @@ Guidelines:
 /* ══════════════════════════════════════════════════════════════
    MARKDOWN RENDERER
 ══════════════════════════════════════════════════════════════ */
-function Md({ text, dark }: { text: string; dark?: boolean }): React.ReactElement {
+function Md({ text, onDark }: { text: string; onDark?: boolean }): React.ReactElement {
   return (
     <>
       {text.split("\n").map((line, i) => {
         const parts = line.split(/(\*\*[^*]+\*\*)/g);
         return (
-          <p key={i} style={{ margin: "0 0 10px 0", lineHeight: 1.85, lastChild: { marginBottom: 0 } } as React.CSSProperties}>
+          <p key={i} style={{ margin: "0 0 8px 0", lineHeight: 1.8 }}>
             {parts.map((p, j) =>
               p.startsWith("**") && p.endsWith("**")
-                ? <strong key={j} style={{ color: dark ? T.saffronL : T.saffron, fontWeight: 700 }}>{p.slice(2,-2)}</strong>
+                ? <strong key={j} style={{ color: onDark ? "#d8eedd" : C.forest, fontWeight: 600 }}>{p.slice(2,-2)}</strong>
                 : <span key={j}>{p}</span>
             )}
           </p>
@@ -366,14 +364,14 @@ function Md({ text, dark }: { text: string; dark?: boolean }): React.ReactElemen
 ══════════════════════════════════════════════════════════════ */
 function TagChip({ tag }: { tag?: string }) {
   if (!tag) return null;
-  const isWarn = tag.includes("⚠️") || tag.includes("🔥") || tag === "CRITICAL";
+  const isWarn = tag.includes("⚠") || tag.includes("🔥") || tag === "CRITICAL";
   return (
     <span style={{
-      fontFamily: T.mono, fontSize: 9, letterSpacing: "0.12em",
+      fontFamily: C.mono, fontSize: 9, letterSpacing: "0.12em",
       padding: "3px 9px", borderRadius: 2,
-      background: isWarn ? `${T.crimson}18` : `${T.forest}15`,
-      color: isWarn ? T.crimsonL : T.forestL,
-      border: `1px solid ${isWarn ? T.crimsonL : T.forestL}44`,
+      background: isWarn ? "#f5d0cc" : "#d6eddc",
+      color: isWarn ? "#8c1f14" : C.forest,
+      border: `1px solid ${isWarn ? "#e08070" : "#9dd0aa"}`,
       flexShrink: 0, whiteSpace: "nowrap" as const,
     }}>
       {tag}
@@ -382,68 +380,80 @@ function TagChip({ tag }: { tag?: string }) {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   VIDEO PLAYER WITH FALLBACK
+   VIDEO PLAYER — auto-detects error, shows YouTube fallback
 ══════════════════════════════════════════════════════════════ */
-function VideoPlayer({ lesson, onError, hasError }: {
-  lesson: Lesson;
-  onError: (id: string) => void;
-  hasError: boolean;
-}) {
+function VideoPlayer({ lesson }: { lesson: Lesson }) {
+  const [errored, setErrored] = useState(false);
+  // Reset error state when lesson changes
+  useEffect(() => { setErrored(false); }, [lesson.videoId]);
+
   return (
-    <div style={{ border: `1px solid ${T.paperBdr}`, borderRadius: 4, overflow: "hidden" }}>
+    <div style={{ border: `1px solid ${C.bdr}`, borderRadius: 4, overflow: "hidden", background: C.white }}>
       <div style={{
-        padding: "10px 18px", background: T.paperDim,
-        borderBottom: `1px solid ${T.paperBdr}`,
+        padding: "10px 18px", background: "#f5f0e8",
+        borderBottom: `1px solid ${C.bdrLight}`,
         display: "flex", alignItems: "center", gap: 10,
       }}>
         <span style={{ fontSize: 15 }}>🎬</span>
         <div>
-          <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: "0.12em", color: T.muted }}>
-            VIDEO · {lesson.videoChannel}
+          <div style={{ fontFamily: C.mono, fontSize: 8, letterSpacing: "0.12em", color: C.muted, textTransform: "uppercase" }}>
+            Video · {lesson.videoChannel}
           </div>
-          <div style={{ fontFamily: T.sans, fontSize: 13, color: T.ink, fontWeight: 500, marginTop: 1 }}>
+          <div style={{ fontFamily: C.sans, fontSize: 13, color: C.ink, fontWeight: 500, marginTop: 1 }}>
             {lesson.videoTitle}
           </div>
         </div>
       </div>
-      {hasError ? (
+      {errored ? (
         <div style={{
-          height: 280, background: T.dark,
+          minHeight: 240, background: C.dark,
           display: "flex", flexDirection: "column",
           alignItems: "center", justifyContent: "center",
-          gap: 14, padding: 28, textAlign: "center",
+          gap: 16, padding: 32, textAlign: "center",
         }}>
-          <div style={{ fontSize: 36 }}>📺</div>
-          <div style={{ fontFamily: T.sans, fontSize: 14, color: T.muted, lineHeight: 1.7 }}>
-            Video not available in embedded mode.
+          <div style={{ fontSize: 32 }}>📺</div>
+          <div style={{ fontFamily: C.sans, fontSize: 14, color: "#8a9e88", lineHeight: 1.7 }}>
+            This video cannot be embedded.<br />Watch it directly on YouTube.
           </div>
           <a
             href={`https://www.youtube.com/watch?v=${lesson.videoId}`}
             target="_blank" rel="noopener noreferrer"
             style={{
-              fontFamily: T.mono, fontSize: 11, letterSpacing: "0.1em",
-              color: "#fff", background: T.saffron,
-              padding: "9px 20px", borderRadius: 3,
+              fontFamily: C.mono, fontSize: 11, letterSpacing: "0.1em",
+              color: "#fff", background: C.forest,
+              padding: "10px 22px", borderRadius: 3,
               textDecoration: "none", display: "inline-block",
             }}
           >
             WATCH ON YOUTUBE →
           </a>
-          <div style={{ fontFamily: T.mono, fontSize: 10, color: "#555", maxWidth: 300 }}>
-            Search: &ldquo;{lesson.videoTitle}&rdquo; on YouTube
+          <div style={{ fontFamily: C.mono, fontSize: 9, color: "#555", maxWidth: 280 }}>
+            Search: &ldquo;{lesson.videoTitle}&rdquo;
           </div>
         </div>
       ) : (
         <div style={{ position: "relative", paddingBottom: "56.25%", height: 0, background: "#000" }}>
           <iframe
-            style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}
-            src={`https://www.youtube.com/embed/${lesson.videoId}?rel=0&modestbranding=1`}
-            title={lesson.videoTitle}
-            frameBorder="0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-            onError={() => onError(lesson.videoId)}
-          />
+  key={lesson.videoId}
+  style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }}
+  src={`https://www.youtube.com/embed/${lesson.videoId}?rel=0&modestbranding=1`}
+  title={lesson.videoTitle}
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+  allowFullScreen
+  onError={() => setErrored(true)}
+/>
+          
+        </div>
+      )}
+      {!errored && (
+        <div style={{ padding: "8px 18px", background: "#f5f0e8", borderTop: `1px solid ${C.bdrLight}`, display: "flex", justifyContent: "flex-end" }}>
+          <a
+            href={`https://www.youtube.com/watch?v=${lesson.videoId}`}
+            target="_blank" rel="noopener noreferrer"
+            style={{ fontFamily: C.mono, fontSize: 9, letterSpacing: "0.1em", color: C.muted, textDecoration: "none" }}
+          >
+            Open on YouTube ↗
+          </a>
         </div>
       )}
     </div>
@@ -460,7 +470,6 @@ export default function LearnPage(): React.ReactElement {
   const [completed, setCompleted]    = useState<Set<string>>(new Set());
   const [quizScores, setQuizScores]  = useState<Record<string,number>>({});
   const [quizAnswers, setQuizAns]    = useState<(number|null)[]>([]);
-  const [quizSubmitted, setQuizSub]  = useState<boolean>(false);
   const [messages, setMessages]      = useState<Message[]>([]);
   const [chatInput, setChatInput]    = useState<string>("");
   const [chatLoading, setChatLoad]   = useState<boolean>(false);
@@ -470,29 +479,27 @@ export default function LearnPage(): React.ReactElement {
   const [voiceOn, setVoiceOn]        = useState<boolean>(false);
   const [transcript, setTx]          = useState<string>("");
   const [mounted, setMounted]        = useState<boolean>(false);
-  const [videoErrors, setVideoErrors]= useState<Record<string,boolean>>({});
-
-  void quizSubmitted;
 
   const endRef   = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const recogRef = useRef<SpeechRecognitionInstance | null>(null);
 
   useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     try {
-      const c = localStorage.getItem("cb_learn_v2_completed");
-      const q = localStorage.getItem("cb_learn_v2_scores");
+      const c = localStorage.getItem("cb_learn_v3_completed");
+      const q = localStorage.getItem("cb_learn_v3_scores");
       if (c) setCompleted(new Set(JSON.parse(c) as string[]));
       if (q) setQuizScores(JSON.parse(q) as Record<string,number>);
     } catch { /* ignore */ }
   }, []);
 
   useEffect(() => {
-    if (document.getElementById("cb-learn-gf2")) return;
+    if (document.getElementById("cb-learn-fonts")) return;
     const l = document.createElement("link");
-    l.id = "cb-learn-gf2"; l.rel = "stylesheet";
-    l.href = "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400;1,500&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500&display=swap";
+    l.id = "cb-learn-fonts"; l.rel = "stylesheet";
+    l.href = "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=DM+Mono:wght@400;500&family=Outfit:wght@400;500&display=swap";
     document.head.appendChild(l);
   }, []);
 
@@ -510,7 +517,7 @@ export default function LearnPage(): React.ReactElement {
         e.results[i].isFinal ? (final += t) : (interim += t);
       }
       setTx(final || interim);
-      if (final) setChatInput(final);
+      if (final) { setChatInput(final); if (inputRef.current) inputRef.current.value = final; }
     };
     r.onend = () => setListening(false);
     r.onerror = () => setListening(false);
@@ -526,48 +533,54 @@ export default function LearnPage(): React.ReactElement {
     const pref = voices.find(v => v.lang.startsWith(lang.voiceLang.split("-")[0]));
     if (pref) u.voice = pref;
     u.onstart = () => setSpeaking(true);
-    u.onend = () => setSpeaking(false);
+    u.onend   = () => setSpeaking(false);
     window.speechSynthesis.speak(u);
   }, [voiceOn, lang]);
 
-  const stopSpeak = (): void => { window.speechSynthesis?.cancel(); setSpeaking(false); };
-  const toggleListen = (): void => {
+  const stopSpeak = () => { window.speechSynthesis?.cancel(); setSpeaking(false); };
+
+  const toggleListen = () => {
     if (!recogRef.current) return;
     if (listening) { recogRef.current.stop(); setListening(false); }
     else { setTx(""); recogRef.current.start(); setListening(true); }
   };
 
-  const goHome = (): void => {
+  const goHome = () => {
     setView("home"); setActiveMod(null); setActiveLes(null);
-    setQuizAns([]); setQuizSub(false); setMessages([]);
+    setQuizAns([]); setMessages([]);
   };
-  const openModule = (mod: Module): void => { setActiveMod(mod); setView("module"); };
-  const openLesson = (les: Lesson): void => {
+
+  const openModule = (mod: Module) => { setActiveMod(mod); setView("module"); };
+
+  const openLesson = (les: Lesson) => {
     setActiveLes(les); setView("lesson");
-    setQuizAns([]); setQuizSub(false);
-    setMessages([{ role:"assistant", content:`Hi! I'm InsureIQ. You're studying **${les.title}**. Ask me anything about this topic — in ${lang.label}.` }]);
+    setQuizAns([]);
+    setMessages([{ role:"assistant", content:`Hi! I'm InsureIQ. You're studying **${les.title}**. Ask me anything about this topic.` }]);
+    setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 50);
   };
-  const startQuiz = (): void => {
+
+  const startQuiz = () => {
     if (!activeLesson) return;
     setQuizAns(new Array(activeLesson.quiz.length).fill(null) as null[]);
-    setQuizSub(false); setView("quiz");
+    setView("quiz");
+    setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 50);
   };
 
-  const markComplete = (id: string): void => {
+  const markComplete = (id: string) => {
     const next = new Set(completed); next.add(id); setCompleted(next);
-    localStorage.setItem("cb_learn_v2_completed", JSON.stringify([...next]));
+    localStorage.setItem("cb_learn_v3_completed", JSON.stringify([...next]));
   };
 
-  const submitQuiz = (): void => {
+  const submitQuiz = () => {
     if (!activeLesson || quizAnswers.some(a => a===null)) return;
-    setQuizSub(true);
     const score = quizAnswers.reduce<number>((acc,ans,i) =>
       ans===activeLesson.quiz[i].correct ? acc+1 : acc, 0);
     const updated = { ...quizScores, [activeLesson.id]: score };
     setQuizScores(updated);
-    localStorage.setItem("cb_learn_v2_scores", JSON.stringify(updated));
+    localStorage.setItem("cb_learn_v3_scores", JSON.stringify(updated));
     if (score >= 2) markComplete(activeLesson.id);
     setView("quiz-result");
+    setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 50);
   };
 
   const sendChat = useCallback(async (q: string): Promise<void> => {
@@ -575,6 +588,7 @@ export default function LearnPage(): React.ReactElement {
     const userMsg: Message = { role:"user", content:q };
     const history: Message[] = [...messages, userMsg];
     setMessages(history); setChatInput(""); setTx(""); setChatLoad(true);
+    if (inputRef.current) inputRef.current.value = "";
     try {
       const res = await fetch("/api/chat", {
         method:"POST",
@@ -592,26 +606,39 @@ export default function LearnPage(): React.ReactElement {
       speak(reply);
     } catch {
       setMessages(prev => [...prev, { role:"assistant", content:"Connection issue — please try again." }]);
-    } finally { setChatLoad(false); }
+    } finally { setChatLoad(false); setTimeout(() => inputRef.current?.focus(), 50); }
   }, [chatLoading, messages, activeLesson, speak]);
+
+  const handleKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendChat(inputRef.current?.value ?? chatInput);
+    }
+  };
 
   const totalLessons   = MODULES.reduce((a,m) => a+m.lessons.length, 0);
   const completedCount = MODULES.reduce((a,m) => a+m.lessons.filter(l=>completed.has(l.id)).length, 0);
   const overallPct     = Math.round((completedCount/totalLessons)*100);
 
-  const handleVideoError = (id: string) => setVideoErrors(prev => ({...prev,[id]:true}));
+  if (!mounted) return <div style={{ background: C.bg, minHeight:"100vh" }} />;
 
-  if (!mounted) return <div style={{ background:T.paper, minHeight:"100vh" }} />;
+  /* ── NAV LINKS — link to actual routes in the app ── */
+  const NAV_LINKS = [
+    { label: "ANALYZE", href: "/prepurchase" },
+    { label: "AUDIT",   href: "/audit" },
+    { label: "COMPARE", href: "/compare" },
+    { label: "GET HELP",href: "/help" },
+  ];
 
   /* ── BREADCRUMB ── */
   const Breadcrumb = ({ items }: { items: Array<{ label:string; onClick?:()=>void }> }) => (
-    <div style={{ display:"flex", gap:8, alignItems:"center", marginBottom:36, fontFamily:T.mono, fontSize:10, letterSpacing:"0.08em" }}>
+    <div style={{ display:"flex", gap:8, alignItems:"center", marginBottom:28, fontFamily:C.mono, fontSize:10, letterSpacing:"0.08em" }}>
       {items.map((item, i) => (
         <React.Fragment key={i}>
-          {i > 0 && <span style={{ color:T.muted }}>/</span>}
+          {i > 0 && <span style={{ color: C.mutedLt }}>/</span>}
           {item.onClick
-            ? <button onClick={item.onClick} style={{ background:"none", border:"none", cursor:"pointer", color:T.muted, fontFamily:T.mono, fontSize:10, letterSpacing:"0.08em", padding:0 }}>{item.label}</button>
-            : <span style={{ color:T.dark }}>{item.label}</span>
+            ? <button onClick={item.onClick} style={{ background:"none", border:"none", cursor:"pointer", color:C.muted, fontFamily:C.mono, fontSize:10, letterSpacing:"0.08em", padding:0, textTransform:"uppercase" }}>{item.label}</button>
+            : <span style={{ color: C.dark, textTransform:"uppercase" }}>{item.label}</span>
           }
         </React.Fragment>
       ))}
@@ -621,180 +648,189 @@ export default function LearnPage(): React.ReactElement {
   return (
     <>
       <style>{`
-        @keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
-        @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-        @keyframes blink{0%,80%,100%{opacity:.15;transform:scale(.7)}40%{opacity:1;transform:scale(1)}}
-        @keyframes pulseRing{0%,100%{box-shadow:0 0 0 0 rgba(232,118,10,.45)}60%{box-shadow:0 0 0 10px rgba(232,118,10,0)}}
-        @keyframes slideChat{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
-        @keyframes barGrow{from{width:0}to{width:var(--target)}}
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=DM+Mono:wght@400;500&family=Outfit:wght@400;500&display=swap');
 
-        *{box-sizing:border-box;margin:0;padding:0;}
-        html{scroll-behavior:smooth;}
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: ${C.bg}; color: ${C.ink}; font-family: ${C.sans}; -webkit-font-smoothing: antialiased; }
 
-        .cb-anim{animation:fadeUp .42s cubic-bezier(.22,1,.36,1) both;}
-        .cb-fade{animation:fadeIn .3s ease both;}
+        @keyframes fadeUp   { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes fadeIn   { from{opacity:0} to{opacity:1} }
+        @keyframes bounce   { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-5px)} }
+        @keyframes spin     { to{transform:rotate(360deg)} }
+        @keyframes pulseRing{ 0%,100%{box-shadow:0 0 0 0 rgba(30,92,46,.4)} 60%{box-shadow:0 0 0 8px rgba(30,92,46,0)} }
 
-        .mod-card{cursor:pointer; transition:transform .2s ease, box-shadow .2s ease, background .15s;}
-        .mod-card:hover{transform:translateY(-4px)!important; box-shadow:0 16px 48px rgba(26,17,8,.14)!important; background:${T.paperDim}!important;}
-        .mod-card:active{transform:translateY(-1px)!important;}
+        .cb-anim { animation: fadeUp .38s cubic-bezier(.22,1,.36,1) both; }
 
-        .les-row{cursor:pointer; transition:background .12s, padding-left .18s cubic-bezier(.22,1,.36,1);}
-        .les-row:hover{background:${T.paperDim}!important; padding-left:32px!important;}
+        .mod-card { cursor:pointer; transition:transform .18s, box-shadow .18s, background .12s; }
+        .mod-card:hover { transform:translateY(-3px)!important; box-shadow:0 12px 40px rgba(10,15,13,.12)!important; }
+        .mod-card:active { transform:translateY(-1px)!important; }
 
-        .qopt{cursor:pointer; transition:border-color .12s, background .12s;}
-        .qopt:hover:not(:disabled){border-color:${T.saffron}!important; background:${T.saffron}08!important;}
+        .les-row { cursor:pointer; transition:background .12s, border-color .12s; }
+        .les-row:hover { background:${C.forestDim}!important; }
 
-        .cb-btn{cursor:pointer; transition:transform .15s, filter .15s;}
-        .cb-btn:hover:not(:disabled){transform:translateY(-1px); filter:brightness(1.1);}
-        .cb-btn:disabled{opacity:.32; cursor:not-allowed;}
+        .qopt { cursor:pointer; transition:border-color .12s, background .12s; width:100%; text-align:left; }
+        .qopt:hover:not([disabled]) { border-color:${C.forest}!important; background:${C.forestDim}!important; }
 
-        .chat-in:focus{outline:none; border-color:${T.saffron}!important;}
-        .nav-lnk{cursor:pointer; transition:color .12s;}
-        .nav-lnk:hover{color:${T.paper}!important;}
+        .cb-btn { cursor:pointer; transition:transform .12s, filter .12s; }
+        .cb-btn:hover:not([disabled]) { transform:translateY(-1px); filter:brightness(1.08); }
+        .cb-btn:disabled { opacity:.35; cursor:not-allowed; }
 
-        ::-webkit-scrollbar{width:5px;}
-        ::-webkit-scrollbar-track{background:${T.paperDim};}
-        ::-webkit-scrollbar-thumb{background:${T.paperBdr}; border-radius:3px;}
-        ::-webkit-scrollbar-thumb:hover{background:${T.muted};}
+        .nav-link { transition:color .12s, opacity .12s; }
+        .nav-link:hover { opacity:1!important; color:white!important; }
 
-        select{-webkit-appearance:none; appearance:none; cursor:pointer;}
-        button{font-family:inherit;}
-        iframe{display:block;}
+        .chat-inp:focus { outline:none; border-color:${C.forest}!important; }
+
+        ::-webkit-scrollbar { width:5px; }
+        ::-webkit-scrollbar-track { background:${C.bg}; }
+        ::-webkit-scrollbar-thumb { background:${C.bdr}; border-radius:3px; }
+
+        select { -webkit-appearance:none; appearance:none; cursor:pointer; }
+        button { font-family: inherit; }
+        iframe { display:block; }
+        a { text-decoration:none; }
       `}</style>
 
-      <div style={{ fontFamily:T.sans, background:T.paper, minHeight:"100vh", color:T.dark, display:"flex", flexDirection:"column" }}>
+      <div style={{ fontFamily:C.sans, background:C.bg, minHeight:"100vh", color:C.ink, display:"flex", flexDirection:"column" }}>
 
-        {/* ── NAV ── */}
+        {/* ══ NAV — matches audit page exactly ══ */}
         <nav style={{
           display:"flex", alignItems:"center", justifyContent:"space-between",
           padding:"0 40px", height:58,
-          background:T.dark, borderBottom:`1px solid ${T.darkMid}`,
-          position:"sticky", top:0, zIndex:100,
-          boxShadow:"0 2px 24px rgba(0,0,0,.45)",
+          background:C.dark, borderBottom:`1px solid #1a2018`,
+          position:"sticky", top:0, zIndex:200,
+          boxShadow:"0 2px 20px rgba(0,0,0,.4)",
         }}>
-          <button onClick={goHome} style={{ fontFamily:T.serif, fontSize:18, fontWeight:500, color:T.paper, background:"none", border:"none", cursor:"pointer" }}>
+          <button onClick={goHome} style={{ fontFamily:C.serif, fontSize:20, fontWeight:500, color:"#e8f0ea", background:"none", border:"none", cursor:"pointer", letterSpacing:"0.01em" }}>
             CareBridge
           </button>
-          <div style={{ display:"flex", gap:24, alignItems:"center" }}>
-            {["ANALYZE","AUDIT","COMPARE","GET HELP"].map(l => (
-              <span key={l} className="nav-lnk" style={{ fontFamily:T.mono, fontSize:10, letterSpacing:"0.1em", color:"#5A4A35" }}>{l}</span>
+
+          <div style={{ display:"flex", gap:28, alignItems:"center" }}>
+            {NAV_LINKS.map(({ label, href }) => (
+              <a key={label} href={href} className="nav-link"
+                style={{ fontFamily:C.mono, fontSize:10, letterSpacing:"0.12em", color:"rgba(255,255,255,.35)", textDecoration:"none" }}>
+                {label}
+              </a>
             ))}
-            <span style={{ fontFamily:T.mono, fontSize:10, letterSpacing:"0.1em", color:T.saffron, borderBottom:`1px solid ${T.saffron}`, paddingBottom:2 }}>LEARN</span>
+            <button onClick={goHome}
+              style={{ fontFamily:C.mono, fontSize:10, letterSpacing:"0.12em", color:C.green, background:"none", border:"none", cursor:"pointer", borderBottom:`1px solid ${C.green}`, paddingBottom:2 }}>
+              LEARN
+            </button>
           </div>
+
           <div style={{ display:"flex", gap:8, alignItems:"center" }}>
             <div style={{ position:"relative" }}>
               <select
                 value={lang.code}
                 onChange={e => setLang(LANGS.find(l=>l.code===e.target.value)??LANGS[0])}
-                style={{ fontFamily:T.mono, fontSize:10, letterSpacing:"0.06em", background:T.darkMid, border:`1px solid #3A2E1E`, color:T.paper, padding:"5px 28px 5px 10px", borderRadius:3 }}
+                style={{ fontFamily:C.mono, fontSize:10, letterSpacing:"0.06em", background:"#1a2018", border:`1px solid #2d3a2d`, color:"#e8f0ea", padding:"5px 26px 5px 10px", borderRadius:3 }}
               >
                 {LANGS.map(l => <option key={l.code} value={l.code}>{l.label}</option>)}
               </select>
-              <span style={{ position:"absolute", right:8, top:"50%", transform:"translateY(-50%)", color:T.muted, fontSize:9, pointerEvents:"none" }}>▼</span>
+              <span style={{ position:"absolute", right:8, top:"50%", transform:"translateY(-50%)", color:"rgba(255,255,255,.4)", fontSize:9, pointerEvents:"none" }}>▼</span>
             </div>
             <button
               onClick={() => { setVoiceOn(v=>!v); if(speaking) stopSpeak(); }}
-              style={{ background:"transparent", border:`1px solid ${voiceOn?T.saffron:"#3A2E1E"}`, borderRadius:3, padding:"5px 9px", color:voiceOn?T.saffron:T.muted, fontSize:14, cursor:"pointer", transition:"all .15s" }}
-            >{voiceOn?"🔊":"🔇"}</button>
+              style={{ background:"transparent", border:`1px solid ${voiceOn ? C.green : "#2d3a2d"}`, borderRadius:3, padding:"5px 9px", color:voiceOn ? C.green : "rgba(255,255,255,.4)", fontSize:14, cursor:"pointer", transition:"all .15s" }}
+            >{voiceOn ? "🔊" : "🔇"}</button>
           </div>
         </nav>
 
         {/* ══ HOME ══ */}
         {view==="home" && (
-          <div className="cb-anim" style={{ maxWidth:1120, width:"100%", margin:"0 auto", padding:"52px 40px 100px" }}>
-            {/* Hero */}
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 300px", gap:48, paddingBottom:52, marginBottom:52, borderBottom:`1px solid ${T.paperBdr}` }}>
+          <div className="cb-anim" style={{ maxWidth:1160, width:"100%", margin:"0 auto", padding:"48px 40px 100px" }}>
+
+            {/* Page header — same layout as audit page */}
+            <div style={{ paddingBottom:40, marginBottom:40, borderBottom:`1px solid ${C.bdr}`, display:"grid", gridTemplateColumns:"1fr 280px", gap:40, alignItems:"end" }}>
               <div>
-                <div style={{ fontFamily:T.mono, fontSize:10, letterSpacing:"0.2em", color:T.saffron, marginBottom:18 }}>— INSURANCE EDUCATION · INDIA · IRDAI 2024</div>
-                <h1 style={{ fontFamily:T.serif, fontSize:54, fontWeight:400, lineHeight:1.08, marginBottom:20 }}>
-                  Understand insurance.<br />
-                  <em style={{ color:T.saffron, fontStyle:"italic" }}>Before it&apos;s too late.</em>
+                <div style={{ fontFamily:C.mono, fontSize:10, letterSpacing:"0.18em", textTransform:"uppercase", color:C.muted, marginBottom:14 }}>Insurance Education · India · IRDAI 2024</div>
+                <h1 style={{ fontFamily:C.serif, fontSize:"clamp(34px,3.5vw,50px)", fontWeight:500, lineHeight:1.08, color:C.dark, marginBottom:14 }}>
+                  Understand insurance.<br /><em style={{ fontStyle:"italic", color:C.forest }}>Before it's too late.</em>
                 </h1>
-                <p style={{ fontFamily:T.sans, fontSize:16, color:"#6B5A45", lineHeight:1.8, maxWidth:500, marginBottom:28 }}>
+                <p style={{ fontFamily:C.sans, fontSize:15, color:"#3a4038", lineHeight:1.75, maxWidth:480 }}>
                   4 modules · {totalLessons} lessons · all updated for IRDAI 2024 reforms.
                   Real Indian examples. Voice in Hindi, Marathi & Tamil.
                 </p>
-                <div style={{ display:"flex", gap:10, flexWrap:"wrap" }}>
-                  {[{i:"🏥",t:"IRDAI 2024"},{i:"🎤",t:"4 Languages"},{i:"✅",t:"Free · No Login"},{i:"🇮🇳",t:"Indian Context"}].map(b=>(
-                    <div key={b.t} style={{ display:"flex", alignItems:"center", gap:7, background:T.paperDim, border:`1px solid ${T.paperBdr}`, padding:"7px 14px", borderRadius:3, fontFamily:T.sans, fontSize:12, color:T.muted }}>
-                      <span>{b.i}</span><span>{b.t}</span>
-                    </div>
-                  ))}
-                </div>
               </div>
+              <div style={{ textAlign:"right" }}>
+                {[{i:"🏥",t:"IRDAI 2024"},{i:"🎤",t:"4 Languages"},{i:"✅",t:"Free · No Login"},{i:"🇮🇳",t:"Indian Context"}].map(b=>(
+                  <div key={b.t} style={{ display:"inline-flex", alignItems:"center", gap:6, background:C.white, border:`1px solid ${C.bdr}`, padding:"5px 12px", borderRadius:2, fontFamily:C.sans, fontSize:12, color:C.muted, margin:"3px" }}>
+                    <span>{b.i}</span><span>{b.t}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
 
-              {/* Progress card */}
-              <div style={{ background:T.dark, border:`1px solid ${T.darkMid}`, padding:28, borderRadius:4, boxShadow:"0 8px 48px rgba(26,17,8,.25)" }}>
-                <div style={{ fontFamily:T.mono, fontSize:9, letterSpacing:"0.18em", color:T.muted, marginBottom:14 }}>YOUR PROGRESS</div>
-                <div style={{ fontFamily:T.serif, fontSize:60, fontWeight:400, color:T.paper, lineHeight:1, marginBottom:14 }}>
-                  {overallPct}<span style={{ fontSize:26, color:T.muted }}>%</span>
+            {/* Progress + module grid */}
+            <div style={{ display:"grid", gridTemplateColumns:"240px 1fr", gap:24, alignItems:"start" }}>
+              {/* Progress sidebar */}
+              <div style={{ background:C.dark, borderRadius:4, padding:22, position:"sticky", top:78 }}>
+                <div style={{ fontFamily:C.mono, fontSize:9, letterSpacing:"0.16em", textTransform:"uppercase", color:"rgba(255,255,255,.3)", marginBottom:14 }}>Your Progress</div>
+                <div style={{ fontFamily:C.serif, fontSize:56, fontWeight:400, color:"#e8f0ea", lineHeight:1, marginBottom:10 }}>
+                  {overallPct}<span style={{ fontSize:22, color:"rgba(255,255,255,.35)" }}>%</span>
                 </div>
-                <div style={{ height:3, background:T.darkMid, borderRadius:2, marginBottom:10, overflow:"hidden" }}>
-                  <div style={{ height:"100%", borderRadius:2, background:`linear-gradient(90deg,${T.saffronD},${T.saffron})`, width:`${overallPct}%`, transition:"width 1.2s cubic-bezier(.22,1,.36,1)", boxShadow:`0 0 10px ${T.saffron}70` }} />
+                <div style={{ height:3, background:"#1a2018", borderRadius:2, marginBottom:8, overflow:"hidden" }}>
+                  <div style={{ height:"100%", borderRadius:2, background:C.green, width:`${overallPct}%`, transition:"width 1s ease" }} />
                 </div>
-                <div style={{ fontFamily:T.mono, fontSize:10, color:T.muted, marginBottom:22 }}>{completedCount} of {totalLessons} complete</div>
-                <div style={{ borderTop:`1px solid ${T.darkMid}`, paddingTop:16, display:"flex", flexDirection:"column", gap:9 }}>
+                <div style={{ fontFamily:C.mono, fontSize:10, color:"rgba(255,255,255,.35)", marginBottom:20 }}>{completedCount} of {totalLessons} complete</div>
+                <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
                   {MODULES.map(m=>{
-                    const c=m.lessons.filter(l=>completed.has(l.id)).length;
-                    const pct=Math.round((c/m.lessons.length)*100);
+                    const c = m.lessons.filter(l=>completed.has(l.id)).length;
+                    const pct = Math.round((c/m.lessons.length)*100);
                     return (
                       <div key={m.id}>
-                        <div style={{ display:"flex", justifyContent:"space-between", marginBottom:5 }}>
-                          <div style={{ display:"flex", gap:7, alignItems:"center" }}>
-                            <span style={{ fontSize:12 }}>{m.icon}</span>
-                            <span style={{ fontFamily:T.sans, fontSize:12, color:"#C4B4A0" }}>{m.title}</span>
+                        <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
+                          <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+                            <span style={{ fontSize:11 }}>{m.icon}</span>
+                            <span style={{ fontFamily:C.sans, fontSize:11, color:"rgba(255,255,255,.5)" }}>{m.title}</span>
                           </div>
-                          <span style={{ fontFamily:T.mono, fontSize:9, color:c===m.lessons.length?T.saffron:T.muted }}>{c}/{m.lessons.length}</span>
+                          <span style={{ fontFamily:C.mono, fontSize:9, color:c===m.lessons.length?C.green:"rgba(255,255,255,.3)" }}>{c}/{m.lessons.length}</span>
                         </div>
-                        <div style={{ height:2, background:T.darkMid, borderRadius:1, overflow:"hidden" }}>
-                          <div style={{ height:"100%", background:c===m.lessons.length?T.saffron:T.forestL, width:`${pct}%`, transition:"width .8s ease", borderRadius:1 }} />
+                        <div style={{ height:2, background:"#1a2018", borderRadius:1, overflow:"hidden" }}>
+                          <div style={{ height:"100%", background:c===m.lessons.length?C.green:C.forest, width:`${pct}%`, transition:"width .8s ease", borderRadius:1 }} />
                         </div>
                       </div>
                     );
                   })}
                 </div>
               </div>
-            </div>
 
-            {/* Module grid */}
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:2, background:T.paperBdr, border:`1px solid ${T.paperBdr}` }}>
-              {MODULES.map((mod,mi)=>{
-                const c=mod.lessons.filter(l=>completed.has(l.id)).length;
-                const pct=Math.round((c/mod.lessons.length)*100);
-                return (
-                  <div
-                    key={mod.id}
-                    className="mod-card"
-                    onClick={()=>openModule(mod)}
-                    style={{ background:T.paper, padding:"32px 28px", display:"flex", flexDirection:"column", gap:12, animation:`fadeUp .4s ${mi*0.09}s both cubic-bezier(.22,1,.36,1)` }}
-                  >
-                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
-                      <div style={{ fontSize:30 }}>{mod.icon}</div>
-                      <div style={{ fontFamily:T.mono, fontSize:11, color:T.muted }}>{mod.code}</div>
-                    </div>
-                    <div style={{ fontFamily:T.serif, fontSize:23, fontWeight:500, lineHeight:1.2 }}>{mod.title}</div>
-                    <div style={{ fontFamily:T.sans, fontSize:13, fontStyle:"italic", color:T.muted }}>{mod.subtitle}</div>
-                    <p style={{ fontFamily:T.sans, fontSize:14, color:"#6B5A45", lineHeight:1.78, flex:1 }}>{mod.description}</p>
-                    <div style={{ display:"flex", alignItems:"center", gap:12, marginTop:8 }}>
-                      <div style={{ flex:1, height:2, background:T.paperBdr, borderRadius:1, overflow:"hidden" }}>
-                        <div style={{ height:"100%", borderRadius:1, background:pct===100?T.saffron:T.forest, width:`${pct}%`, transition:"width .9s cubic-bezier(.22,1,.36,1)" }} />
+              {/* Module grid */}
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:2, background:C.bdr, border:`1px solid ${C.bdr}`, borderRadius:4, overflow:"hidden" }}>
+                {MODULES.map((mod,mi)=>{
+                  const c = mod.lessons.filter(l=>completed.has(l.id)).length;
+                  const pct = Math.round((c/mod.lessons.length)*100);
+                  return (
+                    <div key={mod.id} className="mod-card"
+                      onClick={()=>openModule(mod)}
+                      style={{ background:C.white, padding:"28px 24px", display:"flex", flexDirection:"column", gap:10, animation:`fadeUp .38s ${mi*0.08}s both cubic-bezier(.22,1,.36,1)` }}>
+                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+                        <div style={{ fontSize:28 }}>{mod.icon}</div>
+                        <div style={{ fontFamily:C.mono, fontSize:10, color:C.mutedLt }}>{mod.code}</div>
                       </div>
-                      <span style={{ fontFamily:T.mono, fontSize:9, color:T.muted }}>{c}/{mod.lessons.length}</span>
-                      <span style={{ fontFamily:T.serif, fontSize:20, color:T.saffron }}>→</span>
+                      <div style={{ fontFamily:C.serif, fontSize:21, fontWeight:500, lineHeight:1.2, color:C.dark }}>{mod.title}</div>
+                      <div style={{ fontFamily:C.sans, fontSize:13, fontStyle:"italic", color:C.muted }}>{mod.subtitle}</div>
+                      <p style={{ fontFamily:C.sans, fontSize:13.5, color:"#3a4038", lineHeight:1.75, flex:1 }}>{mod.description}</p>
+                      <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:6 }}>
+                        <div style={{ flex:1, height:2, background:C.bdrLight, borderRadius:1, overflow:"hidden" }}>
+                          <div style={{ height:"100%", borderRadius:1, background:pct===100?C.green:C.forest, width:`${pct}%`, transition:"width .9s ease" }} />
+                        </div>
+                        <span style={{ fontFamily:C.mono, fontSize:9, color:C.mutedLt }}>{c}/{mod.lessons.length}</span>
+                        <span style={{ fontFamily:C.serif, fontSize:18, color:C.forest }}>→</span>
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
 
-            {/* India context banner */}
-            <div style={{ marginTop:40, background:`linear-gradient(135deg,${T.forestDim},${T.dark})`, border:`1px solid ${T.forest}44`, borderRadius:4, padding:"22px 28px", display:"flex", gap:20, alignItems:"center" }}>
-              <div style={{ fontSize:36, flexShrink:0 }}>🇮🇳</div>
+            {/* India banner */}
+            <div style={{ marginTop:32, background:C.dark, border:`1px solid #2d3a2d`, borderRadius:4, padding:"20px 28px", display:"flex", gap:18, alignItems:"center" }}>
+              <div style={{ fontSize:32, flexShrink:0 }}>🇮🇳</div>
               <div>
-                <div style={{ fontFamily:T.serif, fontSize:18, color:T.paper, marginBottom:6 }}>Built for Indian policyholders</div>
-                <div style={{ fontFamily:T.sans, fontSize:13, color:"#7A8A78", lineHeight:1.72 }}>
-                  All content updated for IRDAI 2024 reforms · ₹ examples from real Indian hospitals · IGMS, Ombudsman, NALSA, PM-JAY — the actual systems that protect you.
-                  Helpline: <strong style={{ color:T.saffron }}>155255</strong> (toll-free) · igms.irda.gov.in
+                <div style={{ fontFamily:C.serif, fontSize:17, color:"#e8f0ea", marginBottom:5 }}>Built for Indian policyholders</div>
+                <div style={{ fontFamily:C.sans, fontSize:13, color:"#5a7060", lineHeight:1.7 }}>
+                  All content updated for IRDAI 2024 reforms · ₹ examples from real Indian hospitals · IGMS, Ombudsman, NALSA, PM-JAY.
+                  Helpline: <strong style={{ color:C.green }}>155255</strong> · igms.irda.gov.in
                 </div>
               </div>
             </div>
@@ -803,43 +839,45 @@ export default function LearnPage(): React.ReactElement {
 
         {/* ══ MODULE ══ */}
         {view==="module" && activeModule && (
-          <div className="cb-anim" style={{ maxWidth:1120, width:"100%", margin:"0 auto", padding:"40px 40px 100px" }}>
+          <div className="cb-anim" style={{ maxWidth:1160, width:"100%", margin:"0 auto", padding:"40px 40px 100px" }}>
             <Breadcrumb items={[{label:"Learn",onClick:goHome},{label:activeModule.title}]} />
-            <header style={{ marginBottom:40, paddingBottom:32, borderBottom:`1px solid ${T.paperBdr}` }}>
-              <div style={{ display:"flex", gap:12, alignItems:"center", marginBottom:12 }}>
-                <span style={{ fontSize:32 }}>{activeModule.icon}</span>
-                <div style={{ fontFamily:T.mono, fontSize:10, letterSpacing:"0.16em", color:T.saffron }}>{activeModule.code} — MODULE</div>
+            <header style={{ marginBottom:36, paddingBottom:28, borderBottom:`1px solid ${C.bdr}` }}>
+              <div style={{ display:"flex", gap:12, alignItems:"center", marginBottom:10 }}>
+                <span style={{ fontSize:28 }}>{activeModule.icon}</span>
+                <div style={{ fontFamily:C.mono, fontSize:10, letterSpacing:"0.16em", textTransform:"uppercase", color:C.muted }}>{activeModule.code} — Module</div>
               </div>
-              <h1 style={{ fontFamily:T.serif, fontSize:40, fontWeight:400, marginBottom:12 }}>{activeModule.title}</h1>
-              <p style={{ fontFamily:T.sans, fontSize:15, color:"#6B5A45", lineHeight:1.8, maxWidth:600 }}>{activeModule.description}</p>
+              <h1 style={{ fontFamily:C.serif, fontSize:38, fontWeight:500, marginBottom:10, color:C.dark }}>{activeModule.title}</h1>
+              <p style={{ fontFamily:C.sans, fontSize:15, color:"#3a4038", lineHeight:1.8, maxWidth:600 }}>{activeModule.description}</p>
             </header>
-            <div style={{ display:"flex", flexDirection:"column", gap:2, border:`1px solid ${T.paperBdr}`, background:T.paperBdr }}>
+            <div style={{ display:"flex", flexDirection:"column", gap:2, border:`1px solid ${C.bdr}`, background:C.bdr, borderRadius:4, overflow:"hidden" }}>
               {activeModule.lessons.map((les,idx)=>{
-                const isDone=completed.has(les.id);
-                const score=quizScores[les.id];
+                const isDone = completed.has(les.id);
+                const score  = quizScores[les.id];
                 return (
-                  <div key={les.id} className="les-row" style={{ display:"flex", gap:20, alignItems:"flex-start", padding:"24px", background:T.paper }} onClick={()=>openLesson(les)}>
-                    <div style={{ fontFamily:T.mono, fontSize:14, width:32, flexShrink:0, paddingTop:2, color:isDone?T.saffron:T.muted }}>
-                      {isDone?"✓":String(idx+1).padStart(2,"0")}
+                  <div key={les.id} className="les-row"
+                    style={{ display:"flex", gap:18, alignItems:"flex-start", padding:"20px 24px", background:C.white }}
+                    onClick={()=>openLesson(les)}>
+                    <div style={{ fontFamily:C.mono, fontSize:13, width:28, flexShrink:0, paddingTop:1, color:isDone?C.forest:C.mutedLt }}>
+                      {isDone ? "✓" : String(idx+1).padStart(2,"0")}
                     </div>
                     <div style={{ flex:1 }}>
-                      <div style={{ display:"flex", gap:10, alignItems:"center", marginBottom:6, flexWrap:"wrap" }}>
-                        <div style={{ fontFamily:T.serif, fontSize:20, fontWeight:500 }}>{les.title}</div>
+                      <div style={{ display:"flex", gap:10, alignItems:"center", marginBottom:5, flexWrap:"wrap" }}>
+                        <div style={{ fontFamily:C.serif, fontSize:19, fontWeight:500, color:C.dark }}>{les.title}</div>
                         <TagChip tag={les.tag} />
                       </div>
-                      <div style={{ fontFamily:T.sans, fontSize:14, color:"#6B5A45", lineHeight:1.65, fontStyle:"italic", marginBottom:10 }}>{les.summary}</div>
-                      <div style={{ display:"flex", gap:16, flexWrap:"wrap" }}>
+                      <div style={{ fontFamily:C.sans, fontSize:13.5, color:"#3a4038", lineHeight:1.65, fontStyle:"italic", marginBottom:8 }}>{les.summary}</div>
+                      <div style={{ display:"flex", gap:14, flexWrap:"wrap" }}>
                         {[`📖 ${les.duration}`,`🎬 ${les.videoChannel}`,`✏️ ${les.quiz.length} questions`].map(m=>(
-                          <span key={m} style={{ fontFamily:T.mono, fontSize:9, letterSpacing:"0.06em", color:T.muted }}>{m}</span>
+                          <span key={m} style={{ fontFamily:C.mono, fontSize:9, letterSpacing:"0.06em", color:C.mutedLt }}>{m}</span>
                         ))}
-                        {score!==undefined && (
-                          <span style={{ fontFamily:T.mono, fontSize:9, letterSpacing:"0.06em", color:score>=2?T.saffron:T.crimsonL }}>Score: {score}/{les.quiz.length}</span>
+                        {score !== undefined && (
+                          <span style={{ fontFamily:C.mono, fontSize:9, color:score>=2?C.forest:"#8c1f14" }}>Score: {score}/{les.quiz.length}</span>
                         )}
                       </div>
                     </div>
-                    <div style={{ flexShrink:0 }}>
-                      <span style={{ fontFamily:T.mono, fontSize:9, letterSpacing:"0.12em", border:`1px solid ${isDone?T.saffron:T.paperBdr}`, color:isDone?T.saffron:T.muted, padding:"4px 12px" }}>
-                        {isDone?"DONE":"START"}
+                    <div style={{ flexShrink:0, paddingTop:2 }}>
+                      <span style={{ fontFamily:C.mono, fontSize:9, letterSpacing:"0.12em", border:`1px solid ${isDone?C.forest:C.bdr}`, color:isDone?C.forest:C.mutedLt, padding:"4px 12px", borderRadius:2 }}>
+                        {isDone ? "DONE" : "START"}
                       </span>
                     </div>
                   </div>
@@ -851,88 +889,110 @@ export default function LearnPage(): React.ReactElement {
 
         {/* ══ LESSON ══ */}
         {view==="lesson" && activeLesson && activeModule && (
-          <div className="cb-anim" style={{ maxWidth:1120, width:"100%", margin:"0 auto", padding:"40px 40px 100px" }}>
+          <div className="cb-anim" style={{ maxWidth:1160, width:"100%", margin:"0 auto", padding:"40px 40px 100px" }}>
             <Breadcrumb items={[{label:"Learn",onClick:goHome},{label:activeModule.title,onClick:()=>setView("module")},{label:activeLesson.title}]} />
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 330px", gap:28, alignItems:"start" }}>
-              {/* Main */}
-              <div style={{ display:"flex", flexDirection:"column", gap:24 }}>
-                <div style={{ paddingBottom:20, borderBottom:`1px solid ${T.paperBdr}` }}>
-                  <div style={{ display:"flex", gap:10, alignItems:"center", marginBottom:10, flexWrap:"wrap" }}>
-                    <div style={{ fontFamily:T.mono, fontSize:10, letterSpacing:"0.14em", color:T.saffron }}>{activeModule.code} — {activeModule.title.toUpperCase()}</div>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 300px", gap:24, alignItems:"start" }}>
+
+              {/* ── Main content ── */}
+              <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
+                {/* Lesson header */}
+                <div style={{ paddingBottom:18, borderBottom:`1px solid ${C.bdr}` }}>
+                  <div style={{ display:"flex", gap:10, alignItems:"center", marginBottom:8, flexWrap:"wrap" }}>
+                    <div style={{ fontFamily:C.mono, fontSize:10, letterSpacing:"0.14em", textTransform:"uppercase", color:C.muted }}>{activeModule.code} — {activeModule.title}</div>
                     <TagChip tag={activeLesson.tag} />
                     {completed.has(activeLesson.id) && (
-                      <span style={{ fontFamily:T.mono, fontSize:9, letterSpacing:"0.1em", color:T.saffron, border:`1px solid ${T.saffron}`, padding:"2px 10px" }}>✓ COMPLETED</span>
+                      <span style={{ fontFamily:C.mono, fontSize:9, letterSpacing:"0.1em", color:C.forest, border:`1px solid ${C.forest}`, padding:"2px 9px", borderRadius:2 }}>✓ COMPLETED</span>
                     )}
                   </div>
-                  <h1 style={{ fontFamily:T.serif, fontSize:36, fontWeight:400, marginBottom:10 }}>{activeLesson.title}</h1>
-                  <p style={{ fontFamily:T.sans, fontSize:15, color:"#6B5A45", fontStyle:"italic", lineHeight:1.7 }}>{activeLesson.summary}</p>
+                  <h1 style={{ fontFamily:C.serif, fontSize:34, fontWeight:500, marginBottom:8, color:C.dark }}>{activeLesson.title}</h1>
+                  <p style={{ fontFamily:C.sans, fontSize:14.5, color:"#3a4038", fontStyle:"italic", lineHeight:1.7 }}>{activeLesson.summary}</p>
                 </div>
 
                 {/* Reading */}
-                <div style={{ background:T.paperDim, border:`1px solid ${T.paperBdr}`, padding:"32px 36px", borderRadius:3 }}>
-                  <div style={{ fontFamily:T.mono, fontSize:9, letterSpacing:"0.16em", color:T.muted, marginBottom:20, paddingBottom:12, borderBottom:`1px solid ${T.paperBdr}` }}>
-                    READING · {activeLesson.duration}
+                <div style={{ background:C.paper, border:`1px solid ${C.bdr}`, padding:"28px 32px", borderRadius:4 }}>
+                  <div style={{ fontFamily:C.mono, fontSize:9, letterSpacing:"0.16em", textTransform:"uppercase", color:C.mutedLt, marginBottom:18, paddingBottom:10, borderBottom:`1px solid ${C.bdrLight}` }}>
+                    Reading · {activeLesson.duration}
                   </div>
                   {activeLesson.content.map((para,i)=>(
-                    <div key={i} style={{ fontFamily:T.sans, fontSize:15.5, color:T.ink, lineHeight:1.87, marginBottom:16 }}>
+                    <div key={i} style={{ fontFamily:C.sans, fontSize:15, color:C.ink, lineHeight:1.85, marginBottom:14 }}>
                       <Md text={para} />
                     </div>
                   ))}
                 </div>
 
                 {/* Video */}
-                <VideoPlayer lesson={activeLesson} hasError={!!videoErrors[activeLesson.videoId]} onError={handleVideoError} />
+                <VideoPlayer lesson={activeLesson} />
+
+                {/* Key takeaways */}
+                <div style={{ background:"#d6eddc", border:`1px solid #9dd0aa`, borderRadius:4, padding:"18px 24px" }}>
+                  <div style={{ fontFamily:C.mono, fontSize:9, letterSpacing:"0.14em", textTransform:"uppercase", color:C.forest, marginBottom:12 }}>Key IRDAI 2024 Updates in This Lesson</div>
+                  {activeLesson.content
+                    .filter(p => p.includes("IRDAI 2024"))
+                    .map((p, i) => (
+                      <div key={i} style={{ display:"flex", gap:10, alignItems:"flex-start", marginBottom:8 }}>
+                        <span style={{ color:C.forest, flexShrink:0, marginTop:2 }}>◆</span>
+                        <div style={{ fontFamily:C.sans, fontSize:13, color:"#143a1e", lineHeight:1.65 }}>
+                          <Md text={p.replace(/\*\*/g, "")} />
+                        </div>
+                      </div>
+                    ))
+                  }
+                  {activeLesson.content.filter(p => p.includes("IRDAI 2024")).length === 0 && (
+                    <div style={{ fontFamily:C.sans, fontSize:13, color:"#3a7050", fontStyle:"italic" }}>This lesson covers foundational concepts applicable under current IRDAI guidelines.</div>
+                  )}
+                </div>
 
                 {/* Quiz CTA */}
-                <div style={{ background:T.dark, border:`1px solid ${T.darkMid}`, padding:"22px 28px", borderRadius:3, display:"flex", justifyContent:"space-between", alignItems:"center", gap:20 }}>
+                <div style={{ background:C.dark, border:`1px solid #1a2018`, padding:"20px 24px", borderRadius:4, display:"flex", justifyContent:"space-between", alignItems:"center", gap:20 }}>
                   <div>
-                    <div style={{ fontFamily:T.serif, fontSize:20, color:T.paper, marginBottom:5 }}>Test your understanding</div>
-                    <div style={{ fontFamily:T.sans, fontSize:12, color:T.muted }}>{activeLesson.quiz.length} questions · Score 2+ to mark lesson complete</div>
+                    <div style={{ fontFamily:C.serif, fontSize:19, color:"#e8f0ea", marginBottom:4 }}>Test your understanding</div>
+                    <div style={{ fontFamily:C.sans, fontSize:12, color:"rgba(255,255,255,.4)" }}>{activeLesson.quiz.length} questions · Score 2+ to mark lesson complete</div>
                   </div>
-                  <button className="cb-btn" onClick={startQuiz} style={{ fontFamily:T.mono, fontSize:11, letterSpacing:"0.1em", background:`linear-gradient(135deg,${T.saffronD},${T.saffron})`, color:"#fff", border:"none", padding:"11px 26px", borderRadius:3, flexShrink:0, boxShadow:`0 4px 18px ${T.saffron}44` }}>
+                  <button className="cb-btn" onClick={startQuiz}
+                    style={{ fontFamily:C.mono, fontSize:11, letterSpacing:"0.1em", background:C.forest, color:"#e8f0ea", border:"none", padding:"11px 24px", borderRadius:3, flexShrink:0, cursor:"pointer" }}>
                     TAKE QUIZ →
                   </button>
                 </div>
               </div>
 
-              {/* Chat sidebar */}
-              <div style={{ background:T.dark, border:`1px solid ${T.darkMid}`, display:"flex", flexDirection:"column", position:"sticky", top:78, maxHeight:"calc(100vh - 98px)", borderRadius:4, overflow:"hidden", boxShadow:"0 10px 48px rgba(26,17,8,.3)" }}>
-                {/* Header */}
-                <div style={{ padding:"14px 18px", borderBottom:`1px solid ${T.darkMid}`, display:"flex", justifyContent:"space-between", alignItems:"center", background:`linear-gradient(135deg,${T.darkMid},${T.dark})` }}>
+              {/* ── Chat sidebar ── */}
+              <div style={{ background:C.dark, border:`1px solid #1a2018`, display:"flex", flexDirection:"column", position:"sticky", top:78, maxHeight:"calc(100vh - 100px)", borderRadius:4, overflow:"hidden", boxShadow:"0 8px 40px rgba(10,15,13,.3)" }}>
+                {/* Chat header */}
+                <div style={{ padding:"12px 16px", borderBottom:`1px solid #1a2018`, display:"flex", justifyContent:"space-between", alignItems:"center", background:"#0a0f0d" }}>
                   <div>
-                    <div style={{ fontFamily:T.mono, fontSize:8, letterSpacing:"0.14em", color:T.muted, marginBottom:3 }}>LESSON ASSISTANT</div>
-                    <div style={{ fontFamily:T.serif, fontSize:16, color:T.paper }}>InsureIQ</div>
+                    <div style={{ fontFamily:C.mono, fontSize:8, letterSpacing:"0.14em", textTransform:"uppercase", color:"rgba(255,255,255,.3)", marginBottom:2 }}>Lesson Assistant</div>
+                    <div style={{ fontFamily:C.serif, fontSize:16, color:"#e8f0ea" }}>InsureIQ</div>
                   </div>
-                  <div style={{ display:"flex", gap:6 }}>
-                    <button
-                      onClick={toggleListen}
-                      title={listening?`Stop`:`Speak in ${lang.label}`}
-                      style={{ width:32, height:32, borderRadius:3, background:"transparent", border:`1px solid ${listening?T.saffron:T.darkMid}`, color:listening?T.saffron:T.muted, cursor:"pointer", fontSize:13, display:"flex", alignItems:"center", justifyContent:"center", animation:listening?"pulseRing 1.5s infinite":"none", transition:"all .15s" }}
-                    >{listening?"◼":"◎"}</button>
+                  <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+                    <div style={{ width:6, height:6, borderRadius:"50%", background:C.green, boxShadow:`0 0 6px ${C.green}` }} />
+                    <button onClick={toggleListen} title={listening ? "Stop" : `Speak in ${lang.label}`}
+                      style={{ width:30, height:30, borderRadius:3, background:"transparent", border:`1px solid ${listening ? C.green : "#2d3a2d"}`, color:listening ? C.green : "rgba(255,255,255,.35)", cursor:"pointer", fontSize:12, display:"flex", alignItems:"center", justifyContent:"center", animation:listening?"pulseRing 1.5s infinite":"none", transition:"all .15s" }}>
+                      {listening ? "◼" : "◎"}
+                    </button>
                     {speaking && (
-                      <button onClick={stopSpeak} style={{ width:32, height:32, borderRadius:3, background:"transparent", border:`1px solid ${T.darkMid}`, color:T.muted, cursor:"pointer", fontSize:13, display:"flex", alignItems:"center", justifyContent:"center" }}>⏸</button>
+                      <button onClick={stopSpeak} style={{ width:30, height:30, borderRadius:3, background:"transparent", border:`1px solid #2d3a2d`, color:"rgba(255,255,255,.35)", cursor:"pointer", fontSize:12, display:"flex", alignItems:"center", justifyContent:"center" }}>⏸</button>
                     )}
                   </div>
                 </div>
 
                 {/* Messages */}
-                <div style={{ flex:1, overflowY:"auto", padding:"14px", display:"flex", flexDirection:"column", gap:10, minHeight:180 }}>
+                <div style={{ flex:1, overflowY:"auto", padding:"12px", display:"flex", flexDirection:"column", gap:10, minHeight:200, background:"#0d1510" }}>
                   {messages.map((m,i)=>(
-                    <div key={i} style={{ display:"flex", gap:8, alignItems:"flex-start", flexDirection:m.role==="user"?"row-reverse":"row", animation:`slideChat .22s ${i*0.03}s both` }}>
+                    <div key={i} style={{ display:"flex", gap:8, alignItems:"flex-start", flexDirection:m.role==="user"?"row-reverse":"row" }}>
                       {m.role==="assistant" && (
-                        <div style={{ width:26, height:26, flexShrink:0, background:T.darkMid, border:`1px solid ${T.saffron}44`, color:T.saffron, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:T.mono, fontSize:7, borderRadius:2 }}>IQ</div>
+                        <div style={{ width:24, height:24, flexShrink:0, background:"#1a2018", border:`1px solid ${C.green}44`, color:C.green, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:C.mono, fontSize:7, borderRadius:2 }}>IQ</div>
                       )}
-                      <div style={{ background:m.role==="user"?`${T.forest}55`:T.darkMid, border:`1px solid ${m.role==="user"?T.forestL+"44":T.darkMid}`, padding:"9px 12px", borderRadius:3, fontFamily:T.sans, fontSize:13, color:T.paper, lineHeight:1.65, maxWidth:"86%" }}>
-                        <Md text={m.content} dark />
+                      <div style={{ background:m.role==="user"?"#1e5c2e44":"#1a2018", border:`1px solid ${m.role==="user" ? C.forest+"55" : "#2d3a2d"}`, padding:"9px 12px", borderRadius:3, fontFamily:C.sans, fontSize:12.5, color:"#d8eedd", lineHeight:1.65, maxWidth:"88%" }}>
+                        <Md text={m.content} onDark />
                       </div>
                     </div>
                   ))}
                   {chatLoading && (
                     <div style={{ display:"flex", gap:8, alignItems:"flex-start" }}>
-                      <div style={{ width:26, height:26, flexShrink:0, background:T.darkMid, border:`1px solid ${T.saffron}44`, color:T.saffron, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:T.mono, fontSize:7, borderRadius:2 }}>IQ</div>
-                      <div style={{ background:T.darkMid, padding:"12px 14px", borderRadius:3, display:"flex", gap:5, alignItems:"center" }}>
-                        {[0,0.22,0.44].map((d,i)=>(
-                          <span key={i} style={{ display:"inline-block", width:6, height:6, borderRadius:"50%", background:T.muted, animation:`blink 1.2s ${d}s infinite ease-in-out` }} />
+                      <div style={{ width:24, height:24, flexShrink:0, background:"#1a2018", border:`1px solid ${C.green}44`, color:C.green, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:C.mono, fontSize:7, borderRadius:2 }}>IQ</div>
+                      <div style={{ background:"#1a2018", border:"1px solid #2d3a2d", padding:"10px 14px", borderRadius:3, display:"flex", gap:4, alignItems:"center" }}>
+                        {[0,0.2,0.4].map((d,i)=>(
+                          <span key={i} style={{ display:"inline-block", width:5, height:5, borderRadius:"50%", background:"rgba(255,255,255,.3)", animation:`bounce 1.2s ${d}s infinite` }} />
                         ))}
                       </div>
                     </div>
@@ -941,24 +1001,27 @@ export default function LearnPage(): React.ReactElement {
                 </div>
 
                 {listening && transcript && (
-                  <div style={{ fontFamily:T.sans, fontSize:12, fontStyle:"italic", color:T.saffronL, padding:"8px 16px", borderTop:`1px solid ${T.darkMid}` }}>{transcript}</div>
+                  <div style={{ fontFamily:C.sans, fontSize:12, fontStyle:"italic", color:C.green, padding:"7px 14px", borderTop:"1px solid #1a2018", background:"#0a0f0d" }}>{transcript}</div>
                 )}
 
-                <div style={{ display:"flex", borderTop:`1px solid ${T.darkMid}` }}>
+                <div style={{ display:"flex", borderTop:"1px solid #1a2018", background:"#0a0f0d" }}>
                   <input
-                    className="chat-in"
+                    ref={inputRef}
+                    className="chat-inp"
                     value={chatInput}
-                    onChange={e=>setChatInput(e.target.value)}
-                    onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){void sendChat(chatInput);}}}
+                    onChange={e => setChatInput(e.target.value)}
+                    onKeyDown={handleKey}
                     placeholder={lang.placeholder}
-                    style={{ flex:1, background:"transparent", border:"none", borderRight:`1px solid ${T.darkMid}`, padding:"11px 14px", fontFamily:T.sans, fontSize:13, color:T.paper }}
+                    disabled={chatLoading}
+                    style={{ flex:1, background:"transparent", border:"none", borderRight:"1px solid #1a2018", padding:"11px 13px", fontFamily:C.sans, fontSize:12.5, color:"#e8f0ea" }}
                   />
                   <button
-                    onClick={()=>{void sendChat(chatInput);}}
-                    disabled={chatLoading||!chatInput.trim()}
-                    style={{ width:44, background:chatLoading||!chatInput.trim()?"#2A1F14":T.saffron, border:"none", color:"#fff", cursor:"pointer", fontSize:16, display:"flex", alignItems:"center", justifyContent:"center", transition:"background .15s" }}
+                    onClick={() => sendChat(inputRef.current?.value ?? chatInput)}
+                    disabled={chatLoading || !chatInput.trim()}
+                    style={{ width:42, background:chatLoading||!chatInput.trim()?"#1a2018":C.forest, border:"none", color:"#e8f0ea", cursor:"pointer", fontSize:15, display:"flex", alignItems:"center", justifyContent:"center", transition:"background .15s" }}
                   >→</button>
                 </div>
+                <div style={{ padding:"4px 13px 7px", fontFamily:C.mono, fontSize:8, letterSpacing:"0.05em", color:"rgba(255,255,255,.2)", background:"#0a0f0d" }}>Enter to send · not legal advice</div>
               </div>
             </div>
           </div>
@@ -966,24 +1029,29 @@ export default function LearnPage(): React.ReactElement {
 
         {/* ══ QUIZ ══ */}
         {view==="quiz" && activeLesson && (
-          <div className="cb-anim" style={{ maxWidth:740, width:"100%", margin:"0 auto", padding:"40px 40px 100px" }}>
-            <button onClick={()=>setView("lesson")} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:T.mono, fontSize:10, color:T.muted, letterSpacing:"0.08em", marginBottom:32 }}>← BACK TO LESSON</button>
-            <div style={{ marginBottom:36, paddingBottom:24, borderBottom:`1px solid ${T.paperBdr}` }}>
-              <div style={{ fontFamily:T.mono, fontSize:10, letterSpacing:"0.14em", color:T.saffron, marginBottom:8 }}>QUIZ — {activeLesson.title.toUpperCase()}</div>
-              <h2 style={{ fontFamily:T.serif, fontSize:34, fontWeight:400, marginBottom:8 }}>Test your understanding</h2>
-              <p style={{ fontFamily:T.sans, fontSize:15, color:T.muted, fontStyle:"italic" }}>Score 2+ to complete the lesson.</p>
+          <div className="cb-anim" style={{ maxWidth:720, width:"100%", margin:"0 auto", padding:"40px 40px 100px" }}>
+            <button onClick={()=>setView("lesson")}
+              style={{ background:"none", border:"none", cursor:"pointer", fontFamily:C.mono, fontSize:10, color:C.mutedLt, letterSpacing:"0.08em", marginBottom:28, display:"flex", alignItems:"center", gap:6 }}>
+              ← BACK TO LESSON
+            </button>
+            <div style={{ marginBottom:32, paddingBottom:22, borderBottom:`1px solid ${C.bdr}` }}>
+              <div style={{ fontFamily:C.mono, fontSize:10, letterSpacing:"0.14em", textTransform:"uppercase", color:C.muted, marginBottom:6 }}>Quiz — {activeLesson.title}</div>
+              <h2 style={{ fontFamily:C.serif, fontSize:32, fontWeight:500, marginBottom:6, color:C.dark }}>Test your understanding</h2>
+              <p style={{ fontFamily:C.sans, fontSize:14, color:C.muted, fontStyle:"italic" }}>Score 2 or more to complete the lesson.</p>
             </div>
+
             {activeLesson.quiz.map((q,qi)=>(
-              <div key={qi} style={{ background:T.paperDim, border:`1px solid ${T.paperBdr}`, padding:"24px", marginBottom:16, borderRadius:3 }}>
-                <div style={{ fontFamily:T.mono, fontSize:10, letterSpacing:"0.12em", color:T.muted, marginBottom:8 }}>Q{qi+1}</div>
-                <div style={{ fontFamily:T.serif, fontSize:18, lineHeight:1.5, marginBottom:18 }}>{q.question}</div>
-                <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+              <div key={qi} style={{ background:C.white, border:`1px solid ${C.bdr}`, padding:"22px", marginBottom:14, borderRadius:4 }}>
+                <div style={{ fontFamily:C.mono, fontSize:10, letterSpacing:"0.12em", color:C.mutedLt, marginBottom:6 }}>Q{qi+1} of {activeLesson.quiz.length}</div>
+                <div style={{ fontFamily:C.serif, fontSize:18, lineHeight:1.5, marginBottom:16, color:C.dark }}>{q.question}</div>
+                <div style={{ display:"flex", flexDirection:"column", gap:7 }}>
                   {q.options.map((opt,oi)=>{
-                    const sel=quizAnswers[qi]===oi;
+                    const sel = quizAnswers[qi]===oi;
                     return (
-                      <button key={oi} className="qopt" onClick={()=>{const n=[...quizAnswers];n[qi]=oi;setQuizAns(n);}}
-                        style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 16px", textAlign:"left", fontFamily:T.sans, fontSize:15, color:T.dark, background:sel?`${T.saffron}10`:T.paper, border:`1px solid ${sel?T.saffron:T.paperBdr}`, borderRadius:3, width:"100%" }}>
-                        <span style={{ fontFamily:T.mono, fontSize:9, letterSpacing:"0.1em", width:24, height:24, border:`1px solid ${sel?T.saffron:T.paperBdr}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, borderRadius:2, color:sel?T.saffron:T.muted, background:sel?`${T.saffron}15`:"transparent" }}>
+                      <button key={oi} className="qopt"
+                        onClick={()=>{const n=[...quizAnswers]; n[qi]=oi; setQuizAns(n);}}
+                        style={{ display:"flex", alignItems:"center", gap:10, padding:"11px 14px", fontFamily:C.sans, fontSize:14, color:C.dark, background:sel?"#d6eddc":C.paper, border:`1px solid ${sel?C.forest:C.bdr}`, borderRadius:3 }}>
+                        <span style={{ fontFamily:C.mono, fontSize:9, letterSpacing:"0.1em", width:22, height:22, border:`1px solid ${sel?C.forest:C.bdr}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, borderRadius:2, color:sel?C.forest:C.mutedLt, background:sel?"#9dd0aa44":"transparent" }}>
                           {String.fromCharCode(65+oi)}
                         </span>
                         {opt}
@@ -993,8 +1061,10 @@ export default function LearnPage(): React.ReactElement {
                 </div>
               </div>
             ))}
-            <button className="cb-btn" onClick={submitQuiz} disabled={quizAnswers.some(a=>a===null)}
-              style={{ fontFamily:T.mono, fontSize:11, letterSpacing:"0.12em", background:`linear-gradient(135deg,${T.saffronD},${T.saffron})`, color:"#fff", border:"none", padding:"14px 38px", borderRadius:3, marginTop:8, boxShadow:`0 4px 20px ${T.saffron}44` }}>
+
+            <button className="cb-btn" onClick={submitQuiz}
+              disabled={quizAnswers.some(a=>a===null)}
+              style={{ fontFamily:C.mono, fontSize:11, letterSpacing:"0.12em", background:C.forest, color:"#e8f0ea", border:"none", padding:"13px 36px", borderRadius:3, marginTop:8, cursor:"pointer" }}>
               SUBMIT ANSWERS
             </button>
           </div>
@@ -1002,56 +1072,74 @@ export default function LearnPage(): React.ReactElement {
 
         {/* ══ QUIZ RESULT ══ */}
         {view==="quiz-result" && activeLesson && (() => {
-          const score=quizScores[activeLesson.id]??0;
-          const pass=score>=2;
+          const score = quizScores[activeLesson.id] ?? 0;
+          const pass  = score >= 2;
           return (
-            <div className="cb-anim" style={{ maxWidth:740, width:"100%", margin:"0 auto", padding:"40px 40px 100px" }}>
-              <div style={{ padding:"36px", background:pass?`linear-gradient(135deg,${T.forestDim},${T.dark})`:`linear-gradient(135deg,#3D1A1A,${T.dark})`, border:`1px solid ${pass?T.forest+"66":T.crimson+"55"}`, borderRadius:4, marginBottom:24, textAlign:"center", boxShadow:pass?`0 8px 48px ${T.forest}44`:`0 8px 48px ${T.crimson}33` }}>
-                <div style={{ fontFamily:T.serif, fontSize:64, fontWeight:400, color:T.paper, lineHeight:1, marginBottom:10 }}>
-                  {score}<span style={{ fontSize:28, color:T.muted }}>/{activeLesson.quiz.length}</span>
+            <div className="cb-anim" style={{ maxWidth:720, width:"100%", margin:"0 auto", padding:"40px 40px 100px" }}>
+              <div style={{ padding:"32px", background:pass?C.dark:"#1a0808", border:`1px solid ${pass?"#2d3a2d":"#4a1010"}`, borderRadius:4, marginBottom:22, textAlign:"center" }}>
+                <div style={{ fontFamily:C.serif, fontSize:60, fontWeight:400, color:"#e8f0ea", lineHeight:1, marginBottom:8 }}>
+                  {score}<span style={{ fontSize:26, color:"rgba(255,255,255,.35)" }}>/{activeLesson.quiz.length}</span>
                 </div>
-                <div style={{ fontFamily:T.mono, fontSize:11, letterSpacing:"0.16em", color:pass?T.saffron:T.crimsonL, marginBottom:12 }}>
-                  {pass?"✓ LESSON COMPLETE":"REVIEW & RETRY"}
+                <div style={{ fontFamily:C.mono, fontSize:11, letterSpacing:"0.16em", textTransform:"uppercase", color:pass?C.green:"#e07060", marginBottom:10 }}>
+                  {pass ? "✓ Lesson Complete" : "Review & Retry"}
                 </div>
-                <div style={{ fontFamily:T.sans, fontSize:15, fontStyle:"italic", color:"#8A9E88", lineHeight:1.6 }}>
-                  {pass?"Well done. You've demonstrated solid understanding of this topic.":"Review the lesson material and try again — no pressure, this is self-paced."}
+                <div style={{ fontFamily:C.sans, fontSize:14, fontStyle:"italic", color:"rgba(255,255,255,.5)", lineHeight:1.6 }}>
+                  {pass ? "Well done. You've demonstrated solid understanding of this topic." : "Review the lesson material and try again — no pressure, this is self-paced."}
                 </div>
               </div>
+
               {activeLesson.quiz.map((q,qi)=>{
-                const chosen=quizAnswers[qi]; const correct=q.correct; const isRight=chosen===correct;
+                const chosen = quizAnswers[qi];
+                const correct = q.correct;
+                const isRight = chosen === correct;
                 return (
-                  <div key={qi} style={{ background:T.paperDim, border:`1px solid ${T.paperBdr}`, padding:"20px 24px", marginBottom:12, borderRadius:3 }}>
-                    <div style={{ display:"flex", gap:12, alignItems:"flex-start", marginBottom:12 }}>
-                      <span style={{ width:28, height:28, flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center", background:isRight?`${T.forest}44`:`${T.crimson}33`, color:isRight?T.saffron:T.crimsonL, fontFamily:T.mono, fontSize:11, borderRadius:2 }}>
-                        {isRight?"✓":"✗"}
+                  <div key={qi} style={{ background:C.white, border:`1px solid ${C.bdr}`, padding:"18px 22px", marginBottom:10, borderRadius:4 }}>
+                    <div style={{ display:"flex", gap:10, alignItems:"flex-start", marginBottom:10 }}>
+                      <span style={{ width:26, height:26, flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center", background:isRight?"#d6eddc":"#f5d0cc", color:isRight?C.forest:"#8c1f14", fontFamily:C.mono, fontSize:11, borderRadius:2 }}>
+                        {isRight ? "✓" : "✗"}
                       </span>
-                      <div style={{ fontFamily:T.serif, fontSize:17, lineHeight:1.5 }}>{q.question}</div>
+                      <div style={{ fontFamily:C.serif, fontSize:16, lineHeight:1.5, color:C.dark }}>{q.question}</div>
                     </div>
                     {!isRight && (
-                      <div style={{ fontFamily:T.mono, fontSize:11, color:T.saffron, marginBottom:8, letterSpacing:"0.04em" }}>
+                      <div style={{ fontFamily:C.mono, fontSize:11, color:C.forest, marginBottom:7, letterSpacing:"0.04em", paddingLeft:36 }}>
                         Correct: <strong>{q.options[correct]}</strong>
                       </div>
                     )}
-                    <div style={{ fontFamily:T.sans, fontSize:14, color:"#6B5A45", lineHeight:1.78, fontStyle:"italic" }}>{q.explanation}</div>
+                    <div style={{ fontFamily:C.sans, fontSize:13, color:"#3a4038", lineHeight:1.75, fontStyle:"italic", paddingLeft:36 }}>{q.explanation}</div>
                   </div>
                 );
               })}
-              <div style={{ display:"flex", gap:12, marginTop:24, flexWrap:"wrap" }}>
-                {!pass&&<button className="cb-btn" onClick={startQuiz} style={{ fontFamily:T.mono, fontSize:11, letterSpacing:"0.1em", background:"transparent", border:`1px solid ${T.paperBdr}`, color:T.dark, padding:"11px 22px", borderRadius:3 }}>RETRY QUIZ</button>}
-                <button className="cb-btn" onClick={()=>setView("lesson")} style={{ fontFamily:T.mono, fontSize:11, letterSpacing:"0.1em", background:"transparent", border:`1px solid ${T.paperBdr}`, color:T.dark, padding:"11px 22px", borderRadius:3 }}>
-                  {pass?"BACK TO LESSON":"REVIEW LESSON"}
+
+              <div style={{ display:"flex", gap:10, marginTop:22, flexWrap:"wrap" }}>
+                {!pass && (
+                  <button className="cb-btn" onClick={startQuiz}
+                    style={{ fontFamily:C.mono, fontSize:11, letterSpacing:"0.1em", background:"transparent", border:`1px solid ${C.bdr}`, color:C.ink, padding:"10px 20px", borderRadius:3, cursor:"pointer" }}>
+                    RETRY QUIZ
+                  </button>
+                )}
+                <button className="cb-btn" onClick={()=>setView("lesson")}
+                  style={{ fontFamily:C.mono, fontSize:11, letterSpacing:"0.1em", background:"transparent", border:`1px solid ${C.bdr}`, color:C.ink, padding:"10px 20px", borderRadius:3, cursor:"pointer" }}>
+                  {pass ? "BACK TO LESSON" : "REVIEW LESSON"}
                 </button>
-                <button className="cb-btn" onClick={()=>setView("module")} style={{ fontFamily:T.mono, fontSize:11, letterSpacing:"0.1em", background:`linear-gradient(135deg,${T.saffronD},${T.saffron})`, color:"#fff", border:"none", padding:"11px 22px", borderRadius:3, boxShadow:`0 4px 16px ${T.saffron}44` }}>
+                <button className="cb-btn" onClick={()=>setView("module")}
+                  style={{ fontFamily:C.mono, fontSize:11, letterSpacing:"0.1em", background:C.forest, color:"#e8f0ea", border:"none", padding:"10px 20px", borderRadius:3, cursor:"pointer" }}>
                   ALL LESSONS →
                 </button>
+                {pass && (
+                  <button className="cb-btn" onClick={goHome}
+                    style={{ fontFamily:C.mono, fontSize:11, letterSpacing:"0.1em", background:"transparent", border:`1px solid ${C.forest}`, color:C.forest, padding:"10px 20px", borderRadius:3, cursor:"pointer" }}>
+                    HOME →
+                  </button>
+                )}
               </div>
             </div>
           );
         })()}
 
-        <footer style={{ padding:"18px 40px", borderTop:`1px solid ${T.paperBdr}`, fontFamily:T.mono, fontSize:9, letterSpacing:"0.06em", color:T.muted, display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:"auto" }}>
+        {/* ══ FOOTER ══ */}
+        <footer style={{ padding:"16px 40px", borderTop:`1px solid ${C.bdr}`, fontFamily:C.mono, fontSize:9, letterSpacing:"0.06em", color:C.mutedLt, display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:"auto", background:C.paper }}>
           <span>CareBridge AI · Insurance Education · Not legal advice</span>
-          <span>IRDAI Helpline: 155255 · igms.irda.gov.in · cioins.co.in</span>
+          <span>IRDAI Helpline: <strong style={{ color:C.forest }}>155255</strong> · igms.irda.gov.in · cioins.co.in</span>
         </footer>
       </div>
     </>

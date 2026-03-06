@@ -253,7 +253,16 @@ _KEYS = [
 
 def _salvage_json(text: str):
     result = {}
+
     for key in _KEYS:
-        match = re.search(rf'{key}.*?(High|Moderate|Low)', text, re.I)
+        pattern = key.replace("_", "[ _-]?")
+
+        match = re.search(
+            rf'{pattern}.*?(High Risk|Moderate Risk|Low Risk)',
+            text,
+            re.I
+        )
+
         result[key] = _normalize(match.group(1)) if match else "Not Found"
+
     return json.dumps(result)
