@@ -291,9 +291,10 @@ def learn(request: LearnRequest):
     """
     try:
         from llm.report_chat_prompt import learn_prompt
+        from engines import inference
 
         prompt = learn_prompt(request.question, lang=request.lang)
-        raw = generate(
+        raw = inference.generate(
             prompt,
             _engines["model"],
             _engines["tokenizer"],
