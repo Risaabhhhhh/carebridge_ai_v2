@@ -16,6 +16,17 @@ SPEECH_LANG_CODES: dict[str, str] = {
 }
 
 # ══════════════════════════════════════════════════════════════════════════════
+# SYSTEM LANGUAGE INSTRUCTION  (injected into the LLM system prompt)
+# ══════════════════════════════════════════════════════════════════════════════
+
+SYSTEM_LANG_INSTRUCTION: dict[str, str] = {
+    "en": "Respond in English. Be clear and concise.",
+    "hi": "Hindi mein jawab dein. Saral aur seedhi bhasha use karein.",
+    "mr": "Marathi madhye uttar dya. Saral aani spasht bhasha vapara.",
+    "ta": "Tamil il padhil solunga. Theliva maRRum neriyan mozhi upayogippadhu.",
+}
+
+# ══════════════════════════════════════════════════════════════════════════════
 # TRANSLATION TABLE
 # Keys used by report_chat_service.py fallback functions.
 # Each entry: { "en": "...", "hi": "...", "mr": "...", "ta": "..." }
